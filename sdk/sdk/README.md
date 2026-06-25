@@ -47,7 +47,7 @@ import { CoralClient } from '../sdk/sdk/src/index.js'
 ```typescript
 import { CoralClient } from '@pay/sdk'
 
-const client = new CoralClient({ baseUrl: 'http://localhost:8080' })
+const client = new CoralClient('http://localhost:8081')
 
 // Create an agent and start it
 await client.createAgent('trader-1')
@@ -77,10 +77,10 @@ new CoralClient(baseUrl?: string)
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `baseUrl` | `string` | `'http://localhost:8080'` | Base URL of coral-server. Trailing slash is stripped automatically. |
+| `baseUrl` | `string` | `'http://localhost:8081'` | Base URL of coral-server. Trailing slash is stripped automatically. |
 
 ```typescript
-const client = new CoralClient('http://localhost:8080')
+const client = new CoralClient('http://localhost:8081')
 const remoteClient = new CoralClient('https://coral.example.com')
 ```
 
@@ -515,7 +515,7 @@ Sets the URL and/or token for the CoralOS server connection. Calls `PUT /api/v1/
 
 ```typescript
 await client.setCoralOsConfig({
-  url: 'http://localhost:8080',
+  url: 'http://localhost:8081',
   token: 'my-bearer-token',
 })
 ```
@@ -719,7 +719,7 @@ Full 10-step flow from agent creation to confirmed sale:
 ```typescript
 import { CoralClient } from '@pay/sdk'
 
-const client = new CoralClient('http://localhost:8080')
+const client = new CoralClient('http://localhost:8081')
 
 // 1. Create seller agent (Helius monitor watching for payment)
 await client.createHeliusMonitorAgent({

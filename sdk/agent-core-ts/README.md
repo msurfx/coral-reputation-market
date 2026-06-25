@@ -813,7 +813,7 @@ Optional bridge that makes TypeScript agents visible in the coral-server UI and 
 
 ```typescript
 const sync = new CoralServerSync()
-await sync.attach(manager, 'http://localhost:8080')
+await sync.attach(manager, 'http://localhost:8081')
 ```
 
 #### `detach(): void`
@@ -1018,7 +1018,7 @@ async function main() {
 
   // Wire them to coral-server so the web UI can see them
   const sync = new CoralServerSync()
-  await sync.attach(manager, 'http://localhost:8080')
+  await sync.attach(manager, 'http://localhost:8081')
 
   // Start both agents
   await manager.startAgent('seller')

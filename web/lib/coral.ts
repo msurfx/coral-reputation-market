@@ -9,7 +9,7 @@ let _client: CoralClient | null = null
 
 export function getClient(): CoralClient {
   if (!_client) {
-    const baseUrl = process.env.NEXT_PUBLIC_CORAL_SERVER ?? 'http://localhost:8080'
+    const baseUrl = process.env.NEXT_PUBLIC_CORAL_SERVER ?? 'http://localhost:8081'
     _client = new CoralClient(baseUrl)
   }
   return _client
