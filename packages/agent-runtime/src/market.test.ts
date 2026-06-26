@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   formatWant, parseWant, formatBid, parseBid, formatAward, parseAward,
-  formatEscrowRequired, parseEscrowRequired, selectBids, pickCheapest, verb, messageRound,
+  formatEscrowRequired, parseEscrowRequired, formatDeposited, parseDeposited,
+  selectBids, pickCheapest, verb, messageRound,
   type Bid,
 } from './market.js'
 
@@ -32,8 +33,12 @@ describe('AWARD + ESCROW_REQUIRED round-trip', () => {
     expect(parseAward(formatAward(9, 'seller-cheap'))).toEqual({ round: 9, to: 'seller-cheap' })
   })
   it('ESCROW_REQUIRED', () => {
-    const t = { round: 9, reference: 'R3f', amountSol: 0.0006, deadlineSecs: 600 }
+    const t = { round: 9, reference: 'R3f', seller: 'SeLLeRwa11et', amountSol: 0.0006, deadlineSecs: 600 }
     expect(parseEscrowRequired(formatEscrowRequired(t))).toEqual(t)
+  })
+  it('DEPOSITED', () => {
+    const d = { round: 9, reference: 'R3f', buyer: 'BuYeRwa11et', sig: '5h2abc' }
+    expect(parseDeposited(formatDeposited(d))).toEqual(d)
   })
 })
 

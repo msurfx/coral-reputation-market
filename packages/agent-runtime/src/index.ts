@@ -22,6 +22,7 @@ export type { LlmProvider, CompleteOpts } from './llm.js'
 // Market protocol — the marketplace wire format (pure, network-free)
 export {
   formatWant, parseWant, formatBid, parseBid, formatAward, parseAward,
-  formatEscrowRequired, parseEscrowRequired, selectBids, pickCheapest, verb, messageRound,
+  formatEscrowRequired, parseEscrowRequired, formatDeposited, parseDeposited,
+  selectBids, pickCheapest, verb, messageRound,
 } from './market.js'
-export type { Want, Bid, EscrowTerms } from './market.js'
+export type { Want, Bid, EscrowTerms, Deposited } from './market.js'

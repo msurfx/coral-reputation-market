@@ -29,8 +29,18 @@ export interface Bid {
 export interface EscrowTerms {
   round: number
   reference: string
+  /** The seller's receive wallet (base58) — the buyer deposits to escrow naming this seller. */
+  seller: string
   amountSol: number
   deadlineSecs: number
+}
+
+export interface Deposited {
+  round: number
+  reference: string
+  /** The buyer's wallet (base58) — the seller derives the escrow PDA from (buyer, reference). */
+  buyer: string
+  sig: string
 }
 
 const num = (text: string, key: string): number | undefined => {
@@ -93,16 +103,31 @@ export function parseAward(text: string): { round: number; to: string } | null {
 
 // ── ESCROW_REQUIRED ─────────────────────────────────────────────────────────────
 export function formatEscrowRequired(t: EscrowTerms): string {
-  return `ESCROW_REQUIRED round=${t.round} reference=${t.reference} amount=${t.amountSol} deadline=${t.deadlineSecs}`
+  return `ESCROW_REQUIRED round=${t.round} reference=${t.reference} seller=${t.seller} amount=${t.amountSol} deadline=${t.deadlineSecs}`
 }
 export function parseEscrowRequired(text: string): EscrowTerms | null {
   if (verb(text) !== 'ESCROW_REQUIRED') return null
   const round = num(text, 'round')
   const reference = tok(text, 'reference')
+  const seller = tok(text, 'seller')
   const amountSol = num(text, 'amount')
   const deadlineSecs = num(text, 'deadline')
-  if (round == null || !reference || amountSol == null || deadlineSecs == null) return null
-  return { round, reference, amountSol, deadlineSecs }
+  if (round == null || !reference || !seller || amountSol == null || deadlineSecs == null) return null
+  return { round, reference, seller, amountSol, deadlineSecs }
+}
+
+// ── DEPOSITED ───────────────────────────────────────────────────────────────────
+export function formatDeposited(d: Deposited): string {
+  return `DEPOSITED round=${d.round} reference=${d.reference} buyer=${d.buyer} sig=${d.sig}`
+}
+export function parseDeposited(text: string): Deposited | null {
+  if (verb(text) !== 'DEPOSITED') return null
+  const round = num(text, 'round')
+  const reference = tok(text, 'reference')
+  const buyer = tok(text, 'buyer')
+  const sig = tok(text, 'sig')
+  if (round == null || !reference || !buyer || !sig) return null
+  return { round, reference, buyer, sig }
 }
 
 // ── selection ───────────────────────────────────────────────────────────────────
