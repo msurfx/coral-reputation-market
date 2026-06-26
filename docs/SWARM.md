@@ -6,8 +6,13 @@ negotiate, and **pay each other** — money flowing through a graph, not a singl
 
 This guide shows what a swarm looks like on this kit, with a worked **broker** example.
 
-> Status: this is a **blueprint** (like the escrow add-on) — a design + code shape you build out, not a
-> drop-in. The base buyer/seller agents it composes are real and runnable.
+> ✅ **This is built and runnable — it's the "Swarm" tab in the demo UI.** The broker lives in
+> `coral-agents/broker/`, the two priced sellers are thin manifests reusing the seller image
+> (`coral-agents/seller-{cheap,premium}/`), and the runtime has the `waitForMentionInThread` helper.
+>
+> **Run it:** `node scripts/provision-swarm.js` (creates + funds a broker wallet and two seller
+> wallets), then open `http://localhost:3010` → **Swarm** → *Run the swarm demo*. Verified live:
+> two on-chain settlements per request (broker buys @ 0.0001, resells @ 0.00012).
 
 ---
 
@@ -30,10 +35,10 @@ Solana; CoralOS only carries the conversation.
 
 Two surfaces to build a swarm on:
 
-| Surface | Use when | Primitive |
-|---|---|---|
-| **CoralOS** (cross-container) | agents are separate programs/containers | a session graph of N agents, threads, `@mentions` |
-| **The runtime** (in-process) | many agents in one Node process | `AgentManager` + `MessageBus` + `SharedState` + `WorkflowEngine` |
+| Surface                             | Use when                                | Primitive                                                                |
+| ----------------------------------- | --------------------------------------- | ------------------------------------------------------------------------ |
+| **CoralOS** (cross-container) | agents are separate programs/containers | a session graph of N agents, threads,`@mentions`                       |
+| **The runtime** (in-process)  | many agents in one Node process         | `AgentManager` + `MessageBus` + `SharedState` + `WorkflowEngine` |
 
 Most hackathon swarms use **CoralOS** (each agent is its own container, exactly like the seller/buyer).
 
@@ -41,13 +46,13 @@ Most hackathon swarms use **CoralOS** (each agent is its own container, exactly 
 
 ## 2. Swarm patterns
 
-| Pattern | Shape | Money flow |
-|---|---|---|
-| **Broker / router** | buyer → broker → N sellers | buyer pays broker; broker pays the chosen seller |
-| **Marketplace** | N sellers advertise; buyers discover + pick | buyer pays the seller it chose |
-| **Pipeline** | A → B → C (raw → enriched → report) | money flows down the chain, each hop a payment |
-| **Arbiter / judge** | buyer + seller + judge | escrow releases only after the judge verifies delivery |
-| **Auction** | buyer posts; sellers bid | buyer pays the winning bid |
+| Pattern                   | Shape                                       | Money flow                                             |
+| ------------------------- | ------------------------------------------- | ------------------------------------------------------ |
+| **Broker / router** | buyer → broker → N sellers                | buyer pays broker; broker pays the chosen seller       |
+| **Marketplace**     | N sellers advertise; buyers discover + pick | buyer pays the seller it chose                         |
+| **Pipeline**        | A → B → C (raw → enriched → report)     | money flows down the chain, each hop a payment         |
+| **Arbiter / judge** | buyer + seller + judge                      | escrow releases only after the judge verifies delivery |
+| **Auction**         | buyer posts; sellers bid                    | buyer pays the winning bid                             |
 
 We'll build the **broker** — it exercises everything (an agent that is *both* a buyer and a seller).
 

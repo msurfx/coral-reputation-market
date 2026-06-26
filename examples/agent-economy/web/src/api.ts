@@ -16,7 +16,7 @@ export interface Delivered {
   data: string
 }
 export interface FeedMsg {
-  sender: 'buyer-agent' | 'seller-agent'
+  sender: string // buyer-agent | seller-agent | broker | seller-cheap | seller-premium
   text: string
 }
 
@@ -37,3 +37,8 @@ export const startAutonomous = (): Promise<{ sessionId: string }> => POST('/auto
 
 export const getFeed = (): Promise<{ running: boolean; messages: FeedMsg[] }> =>
   fetch('/autonomous/feed').then(json)
+
+export const startSwarm = (): Promise<{ sessionId: string }> => POST('/swarm/start')
+
+export const getSwarmFeed = (): Promise<{ running: boolean; messages: FeedMsg[] }> =>
+  fetch('/swarm/feed').then(json)

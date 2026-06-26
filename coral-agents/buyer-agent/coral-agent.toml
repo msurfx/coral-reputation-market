@@ -16,6 +16,11 @@ ANTHROPIC_API_KEY = { type = "string", default = "", description = "Anthropic AP
 BUYER_KEYPAIR_B58 = { type = "string", description = "Base58-encoded devnet keypair — generate: solana-keygen new --no-bip39-passphrase" }
 BUYER_MAX_SOL = { type = "f64", default = 0.001, description = "Max SOL to spend per request" }
 SOLANA_RPC_URL = { type = "string", default = "", description = "Solana RPC URL" }
+TARGET_AGENT = { type = "string", default = "seller-agent", description = "Agent to buy from — a seller directly, or 'broker' in a swarm" }
+BUYER_REQUEST = { type = "string", default = "", description = "What to request (e.g. 'jupiter'); empty uses the goal.ts default" }
+QUOTE_WAIT_MS = { type = "f64", default = 15000, description = "How long to wait for a payment quote (broker swarms need longer)" }
+DELIVERY_WAIT_MS = { type = "f64", default = 30000, description = "How long to wait for delivery after paying" }
+CYCLE_INTERVAL_MS = { type = "f64", default = 30000, description = "Delay between purchase cycles" }
 
 [runtimes.docker]
 image = "buyer-agent:0.1.0"

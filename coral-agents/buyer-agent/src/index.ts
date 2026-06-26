@@ -17,7 +17,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { startCoralAgent } from '@pay/agent-runtime'
 import { payFromUrl, getBuyerPublicKey } from './wallet.js'
-import { BUYER_GOAL, BUYER_REQUEST, BUYER_MAX_SOL, CYCLE_INTERVAL_MS } from './goal.js'
+import { BUYER_GOAL, BUYER_REQUEST, BUYER_MAX_SOL, CYCLE_INTERVAL_MS, TARGET_AGENT, QUOTE_WAIT_MS, DELIVERY_WAIT_MS } from './goal.js'
 
 const llm = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null
 
@@ -37,19 +37,20 @@ await startCoralAgent({ agentName: 'buyer-agent' }, async (ctx) => {
   console.error(`[buyer-agent] budget: ${BUYER_MAX_SOL} SOL per request`)
   console.error('[buyer-agent] starting purchase loop')
 
-  // Give seller a moment to start up, then create a shared thread
+  // Give the counterparty a moment to start up, then create a shared thread
+  console.error(`[buyer-agent] target: ${TARGET_AGENT}`)
   await new Promise(r => setTimeout(r, 4_000))
-  const threadId = await ctx.createThread('buyer-seller-session', ['seller-agent'])
+  const threadId = await ctx.createThread('buyer-session', [TARGET_AGENT])
   console.error(`[buyer-agent] thread created: ${threadId}`)
 
   while (true) {
     try {
       // ── 1. Request service from seller ──────────────────────────────────
       console.error(`[buyer-agent] requesting: ${BUYER_REQUEST}`)
-      await ctx.send(`request ${BUYER_REQUEST}`, threadId, ['seller-agent'])
+      await ctx.send(`request ${BUYER_REQUEST}`, threadId, [TARGET_AGENT])
 
       // ── 2. Wait for payment URL ─────────────────────────────────────────
-      const payMention = await ctx.waitForMention(15_000)
+      const payMention = await ctx.waitForMention(QUOTE_WAIT_MS)
       if (!payMention) {
         console.error('[buyer-agent] no response from seller, retrying next cycle')
         await new Promise(r => setTimeout(r, CYCLE_INTERVAL_MS))
@@ -87,10 +88,10 @@ await startCoralAgent({ agentName: 'buyer-agent' }, async (ctx) => {
       }
 
       // ── 4. Send payment proof to seller ─────────────────────────────────
-      await ctx.send(`paid ${sig} reference=${reference}`, threadId, ['seller-agent'])
+      await ctx.send(`paid ${sig} reference=${reference}`, threadId, [TARGET_AGENT])
 
       // ── 5. Wait for data delivery ────────────────────────────────────────
-      const deliveryMention = await ctx.waitForMention(30_000)
+      const deliveryMention = await ctx.waitForMention(DELIVERY_WAIT_MS)
       if (!deliveryMention?.text.includes('DELIVERED')) {
         console.error('[buyer-agent] no delivery received')
         await new Promise(r => setTimeout(r, CYCLE_INTERVAL_MS))

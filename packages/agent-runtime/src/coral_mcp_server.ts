@@ -25,6 +25,8 @@ export interface CoralAgentConfig {
 export interface CoralAgentContext {
   /** Block until the next @mention arrives. Returns null on timeout — keep looping. */
   waitForMention(maxWaitMs?: number): Promise<CoralMention | null>
+  /** Like waitForMention, but only returns a mention in `threadId` (skips other threads). */
+  waitForMentionInThread(threadId: string, maxWaitMs?: number): Promise<CoralMention | null>
   /** Block until a message from `agentName` arrives. Use to wait for a counterparty to come online. */
   waitForAgent(agentName: string, maxWaitMs?: number): Promise<CoralMention | null>
   /** Reply to a mention in its thread, @mentioning the original sender. */
@@ -63,6 +65,8 @@ export async function startCoralAgent(
 
   const ctx: CoralAgentContext = {
     waitForMention: (maxWaitMs) => agent.waitForMention(maxWaitMs),
+
+    waitForMentionInThread: (threadId, maxWaitMs) => agent.waitForMentionInThread(threadId, maxWaitMs),
 
     waitForAgent: (agentName, maxWaitMs) => agent.waitForAgent(agentName, maxWaitMs),
 

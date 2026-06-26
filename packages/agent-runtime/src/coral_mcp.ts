@@ -105,6 +105,23 @@ export class CoralMcpAgent {
   }
 
   /**
+   * Like {@link waitForMention}, but only returns a mention in `threadId`; mentions in other threads
+   * that arrive during the wait are skipped. Useful when one agent juggles several threads at once —
+   * e.g. a broker that opens a quote thread with each seller and must correlate the replies.
+   *
+   * Returns null if no matching mention arrives before `maxWaitMs` elapses.
+   */
+  async waitForMentionInThread(threadId: string, maxWaitMs = 30_000): Promise<CoralMention | null> {
+    const deadline = Date.now() + maxWaitMs
+    while (Date.now() < deadline) {
+      const remaining = Math.max(1000, Math.min(15_000, deadline - Date.now()))
+      const mention = await this.waitForMention(remaining)
+      if (mention && mention.threadId === threadId) return mention
+    }
+    return null
+  }
+
+  /**
    * Block until a message from a specific agent arrives (CoralOS `coral_wait_for_agent`).
    * Use this instead of a fixed `setTimeout` to wait for a counterparty (e.g. the seller)
    * to come online before sending it work. Returns null on timeout.

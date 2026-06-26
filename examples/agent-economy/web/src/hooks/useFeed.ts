@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { getFeed, type FeedMsg } from '../api'
 
-/** Poll the autonomous buyer⇄seller conversation while `active`. */
-export function useFeed(active: boolean) {
+type Fetcher = () => Promise<{ running: boolean; messages: FeedMsg[] }>
+
+/** Poll a feed endpoint (autonomous by default, or the swarm) while `active`. */
+export function useFeed(active: boolean, fetcher: Fetcher = getFeed) {
   const [messages, setMessages] = useState<FeedMsg[]>([])
   useEffect(() => {
     if (!active) return
     let stop = false
     const tick = async () => {
       try {
-        const f = await getFeed()
+        const f = await fetcher()
         if (!stop && f.messages) setMessages(f.messages)
       } catch {
         /* transient — keep polling */
@@ -21,6 +23,6 @@ export function useFeed(active: boolean) {
       stop = true
       clearInterval(id)
     }
-  }, [active])
+  }, [active, fetcher])
   return messages
 }

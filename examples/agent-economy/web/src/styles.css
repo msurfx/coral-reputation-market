@@ -80,6 +80,7 @@ section > p { color: var(--fg); opacity: .9; }
 }
 .feed li.buyer { border-left-color: var(--buyer); }
 .feed li.seller { border-left-color: var(--accent); }
+.feed li.broker { border-left-color: #14F195; }
 .who { font-weight: 700; margin-right: 6px; }
 .detail { color: var(--muted); }
 

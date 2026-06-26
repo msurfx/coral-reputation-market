@@ -60,6 +60,11 @@ services:
       - HELIUS_API_KEY=${HELIUS_API_KEY}
       - BUYER_KEYPAIR_B58=${BUYER_KEYPAIR_B58}   # for the autonomous demo viewer
       - BUYER_MAX_SOL=${BUYER_MAX_SOL:-0.001}
+      - BROKER_KEYPAIR_B58=${BROKER_KEYPAIR_B58} # swarm demo (node scripts/provision-swarm.js)
+      - BROKER_WALLET=${BROKER_WALLET}
+      - SELLER_CHEAP_WALLET=${SELLER_CHEAP_WALLET}
+      - SELLER_PREMIUM_WALLET=${SELLER_PREMIUM_WALLET}
+      - SWARM_MARKUP=${SWARM_MARKUP:-1.2}
     depends_on:
       - coral
     restart: unless-stopped

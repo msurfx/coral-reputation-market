@@ -33,6 +33,12 @@ const JUPITER_API_KEY = process.env.JUPITER_API_KEY ?? ''
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY ?? ''
 const BUYER_KEYPAIR_B58 = process.env.BUYER_KEYPAIR_B58 ?? '' // only for the autonomous demo
 const BUYER_MAX_SOL = Number(process.env.BUYER_MAX_SOL ?? '0.001')
+// Swarm demo (broker + 2 sellers) — provision with: node scripts/provision-swarm.js
+const BROKER_KEYPAIR_B58 = process.env.BROKER_KEYPAIR_B58 ?? ''
+const BROKER_WALLET = process.env.BROKER_WALLET ?? ''
+const SELLER_CHEAP_WALLET = process.env.SELLER_CHEAP_WALLET ?? ''
+const SELLER_PREMIUM_WALLET = process.env.SELLER_PREMIUM_WALLET ?? ''
+const SWARM_MARKUP = Number(process.env.SWARM_MARKUP ?? '1.2')
 
 // ── Typed coral option values: { type: "string" | "f64", value } ──
 const str = (value: string) => ({ type: 'string', value })
@@ -236,6 +242,71 @@ app.get('/autonomous/feed', async (_req, res) => {
     if (!r.ok) return res.json({ running: true, messages: [] })
     const messages = collectMessages(await r.json())
       .filter(m => m.sender === 'buyer-agent' || m.sender === 'seller-agent')
+      .map(m => ({ sender: m.sender, text: m.text }))
+    res.json({ running: true, messages })
+  } catch (e) {
+    res.status(502).json({ error: (e as Error).message })
+  }
+})
+
+// ── Swarm front door — buyer → broker → 2 sellers (money through a graph) ────
+let swarmSid: string | null = null
+const SWARM_AGENTS = new Set(['buyer-agent', 'broker', 'seller-cheap', 'seller-premium'])
+
+/** Start (or reuse) a [buyer, broker, seller-cheap, seller-premium] session. */
+app.post('/swarm/start', async (_req, res) => {
+  try {
+    if (!BUYER_KEYPAIR_B58 || !BROKER_KEYPAIR_B58 || !BROKER_WALLET) {
+      return res.status(400).json({ error: 'Swarm needs BROKER_KEYPAIR_B58/BROKER_WALLET — run: node scripts/provision-swarm.js' })
+    }
+    if (swarmSid) return res.json({ sessionId: swarmSid, reused: true })
+
+    const buyerOpts: Record<string, unknown> = {
+      BUYER_KEYPAIR_B58: str(BUYER_KEYPAIR_B58), SOLANA_RPC_URL: str(RPC),
+      TARGET_AGENT: str('broker'), BUYER_REQUEST: str(SERVICE),
+      QUOTE_WAIT_MS: f64(60000), DELIVERY_WAIT_MS: f64(55000), CYCLE_INTERVAL_MS: f64(20000),
+      BUYER_MAX_SOL: f64(0.02),
+    }
+    if (ANTHROPIC) buyerOpts.ANTHROPIC_API_KEY = str(ANTHROPIC)
+    const brokerOpts: Record<string, unknown> = {
+      BROKER_KEYPAIR_B58: str(BROKER_KEYPAIR_B58), SELLER_WALLET: str(BROKER_WALLET),
+      SWARM_SELLERS: str('seller-cheap,seller-premium'), MARKUP: f64(SWARM_MARKUP),
+      BROKER_MAX_SOL: f64(0.01), SOLANA_RPC_URL: str(RPC),
+    }
+    const cheapOpts = addSellerKeys({ SELLER_WALLET: str(SELLER_CHEAP_WALLET || SELLER_WALLET), PRICE_SOL: f64(0.0001), SERVICE: str(SERVICE), SOLANA_RPC_URL: str(RPC) })
+    const premiumOpts = addSellerKeys({ SELLER_WALLET: str(SELLER_PREMIUM_WALLET || SELLER_WALLET), PRICE_SOL: f64(0.0003), SERVICE: str(SERVICE), SOLANA_RPC_URL: str(RPC) })
+
+    const r = await fetch(`${BASE}/api/v1/local/session`, {
+      method: 'POST', headers: AUTH,
+      body: JSON.stringify({
+        agentGraphRequest: { agents: [
+          localAgent('buyer-agent', buyerOpts),
+          localAgent('broker', brokerOpts),
+          localAgent('seller-cheap', cheapOpts),
+          localAgent('seller-premium', premiumOpts),
+        ] },
+        namespaceProvider: { type: 'create_if_not_exists', namespaceRequest: { name: NS } },
+        execution: { mode: 'immediate' },
+      }),
+    })
+    if (!r.ok) throw new Error(`session create failed: ${r.status} ${await r.text()}`)
+    swarmSid = (await r.json() as { sessionId: string }).sessionId
+    console.error(`[bridge] swarm session ${swarmSid}`)
+    res.json({ sessionId: swarmSid })
+  } catch (e) {
+    console.error(`[bridge] /swarm/start error: ${e}`)
+    res.status(502).json({ error: (e as Error).message })
+  }
+})
+
+/** Live feed: the whole swarm conversation (buyer + broker + both sellers). */
+app.get('/swarm/feed', async (_req, res) => {
+  if (!swarmSid) return res.json({ running: false, messages: [] })
+  try {
+    const r = await fetch(`${BASE}/api/v1/local/session/${NS}/${swarmSid}/extended`, { headers: AUTH })
+    if (!r.ok) return res.json({ running: true, messages: [] })
+    const messages = collectMessages(await r.json())
+      .filter(m => SWARM_AGENTS.has(m.sender))
       .map(m => ({ sender: m.sender, text: m.text }))
     res.json({ running: true, messages })
   } catch (e) {

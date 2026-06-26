@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { AutonomousTab } from './components/AutonomousTab'
 import { CheckoutTab } from './components/CheckoutTab'
+import { SwarmTab } from './components/SwarmTab'
 
 type Theme = 'dark' | 'light'
 
 export default function App() {
-  const [tab, setTab] = useState<'auto' | 'checkout'>('auto')
+  const [tab, setTab] = useState<'auto' | 'checkout' | 'swarm'>('auto')
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem('theme') as Theme) || 'dark',
   )
@@ -38,9 +39,14 @@ export default function App() {
         <button className={tab === 'checkout' ? 'on' : ''} onClick={() => setTab('checkout')}>
           Checkout
         </button>
+        <button className={tab === 'swarm' ? 'on' : ''} onClick={() => setTab('swarm')}>
+          Swarm
+        </button>
       </nav>
 
-      {tab === 'auto' ? <AutonomousTab /> : <CheckoutTab />}
+      {tab === 'auto' && <AutonomousTab />}
+      {tab === 'checkout' && <CheckoutTab />}
+      {tab === 'swarm' && <SwarmTab />}
     </div>
   )
 }

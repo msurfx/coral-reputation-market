@@ -1,0 +1,25 @@
+edition = 4
+
+[agent]
+name = "seller-cheap"
+version = "0.1.0"
+description = "Budget seller — same service as seller-agent, lowest price. Reuses the seller-agent image (set PRICE_SOL via options)."
+summary = "A low-priced seller instance for the broker swarm."
+readme = "Same protocol as seller-agent (request -> PAYMENT_REQUIRED -> paid -> DELIVERED), reusing its image at a low PRICE_SOL. Used by the broker swarm as the cheap quote."
+
+[agent.license]
+type = "spdx"
+expression = "MIT"
+
+[options]
+SELLER_WALLET = { type = "string", description = "Devnet wallet pubkey that receives payments" }
+PRICE_SOL = { type = "f64", default = 0.0001, description = "Price per request in SOL" }
+SERVICE = { type = "string", default = "jupiter", description = "Service to sell: jupiter | coingecko | news | inference" }
+SOLANA_RPC_URL = { type = "string", default = "", description = "Solana RPC URL" }
+JUPITER_API_KEY = { type = "string", default = "", description = "Jupiter API key" }
+NEWS_API_KEY = { type = "string", default = "", description = "NewsAPI key" }
+ANTHROPIC_API_KEY = { type = "string", default = "", description = "Anthropic API key" }
+
+# Reuses the already-built seller-agent image — no separate build needed.
+[runtimes.docker]
+image = "seller-agent:0.1.0"
