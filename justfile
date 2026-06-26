@@ -33,6 +33,11 @@ build:
 up:
     docker compose up -d coral bridge
 
+# readiness check: Docker, Node, wallets funded, coral/bridge up, one live payment
+doctor:
+    cd scripts && npm install --no-audit --no-fund
+    node scripts/doctor.js
+
 # run the autonomous loop from the CLI (alternative to the UI button)
 auto:
     cd examples/agent-economy/autonomous && npm install --no-audit --no-fund && npm start

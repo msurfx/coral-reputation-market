@@ -1,14 +1,18 @@
 [toolchain]
-anchor_version = "0.30.1"
+anchor_version = "0.32.1"
 
 [features]
-resolver = "2"
+resolution = true
+skip-lint = false
 
 [programs.devnet]
-escrow = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+escrow = "R5NWNg9eRLWWQU81Xbzz5Du1k7jTDeeT92Ty6qCeXet"
+
+[registry]
+url = "https://api.apr.dev"
 
 [provider]
-cluster = "Devnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

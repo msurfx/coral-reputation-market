@@ -113,6 +113,16 @@ docker logs -f buyer-agent             # watch it pay + receive
 docker compose up -d bridge            # then open http://localhost:3010 with Phantom (Devnet)
 ```
 
+**Verify your setup** — one command checks Docker, Node, funded wallets, the stack, and runs a live
+payment end-to-end:
+
+```sh
+just doctor          # or: node scripts/doctor.js  — green = ready to build
+```
+
+Hit a snag? [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) covers the common ones (Docker, faucet
+rate-limits, Windows `just`, ports).
+
 **No Docker?** [`examples/agent-economy/quickstart/`](examples/agent-economy/quickstart/README.md)
 is the same pay-per-call loop as two bare-metal Node processes over plain HTTP `402`.
 
