@@ -6,7 +6,8 @@
   "description": "TxODDS World Cup oracle — an agent that sells verified sports data for devnet SOL",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "proxy": "ts-node server/proxy.ts",
+    "mint": "tsx server/mint.ts",
+    "proxy": "tsx server/proxy.ts",
     "web": "echo 'open web/index.html in a browser (start the proxy first)'"
   },
   "dependencies": {
@@ -20,7 +21,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }
 }

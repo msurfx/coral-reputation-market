@@ -44,12 +44,22 @@ No new backend: the feed's **Start** button already runs `start.ts`, which is Wo
 
 ## Run it
 
+One command — mints a fresh token, rebuilds, brings up a clean coral (so `seller-worldcup`
+registers), and opens the dashboard:
+
 ```sh
-# 0. one-time: TXLINE_API_KEY in .env (mint via examples/txodds) + BUYER_SERVICE=txline + BUYER_ARG=<id>
-docker compose up -d coral          # coordinator
-node scripts/dashboard.js           # feed (:4000) + dashboard (:5173), opens the browser
-# click "Start a market" → watch the World Cup round bid + settle live
+just worldcup        # then click "Start a market" in the browser
 ```
+
+Or step by step:
+
+```sh
+cd examples/txodds && npm install && npm run mint   # token + WANT (a live fixture) → .env
+docker compose up -d coral                           # coordinator (start it fresh)
+node scripts/dashboard.js                            # feed :4000 + dashboard :5173 → Start a market
+```
+
+The token is short-lived (devnet free tier) — re-run `just mint` (or `npm run mint`) before a demo.
 
 ## Robust fallback (no live devnet)
 

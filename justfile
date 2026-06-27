@@ -17,6 +17,15 @@ dev: setup build clean up
     @echo Opening the dashboard - click "Start a market" once the wallets are funded.
     node scripts/dashboard.js
 
+# ── one-shot World Cup demo: fresh coral + mint a TxLINE token + open the dashboard ──
+worldcup: down setup build clean mint up
+    @echo World Cup specialist is live. Opening the dashboard - click "Start a market".
+    node scripts/dashboard.js
+
+# mint a TxLINE free-tier token into .env (one-time; the token is short-lived, re-run before a demo)
+mint:
+    cd examples/txodds && npm install --no-audit --no-fund && npm run mint
+
 # generate the devnet wallets (fund them manually at the faucet)
 setup:
     cd scripts && npm install --no-audit --no-fund
