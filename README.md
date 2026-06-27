@@ -5,7 +5,8 @@
 
 A buyer agent broadcasts a need; LLM seller agents bid against each other; the buyer awards best value;
 funds are escrowed, delivered against, and released on delivery. Everything runs on **devnet** — free
-play money, real on-chain settlement.
+play money, real on-chain settlement. The headline demo trades a **live TxODDS World Cup edge**; the
+same loop runs a generic data market (prices, swaps, news, inference) when no sports token is present.
 
 ## The three pillars
 
@@ -13,13 +14,14 @@ Each one is load-bearing — pull it and the demo collapses into something lesse
 
 | Pillar | Its job | Remove it → |
 |--------|---------|-------------|
-| **LLM** | sellers decide whether/how much to bid; buyer judges best value | a static vending bank |
+| **LLM** | sellers decide whether/how much to bid; the buyer judges best value; the World Cup seller turns raw odds into a call | a static vending bank |
 | **CoralOS** | the shared market thread; dynamic discovery; multi-party | point-to-point pipes |
-| **Solana (Pay + escrow)** | a `reference` binds the deal; the escrow contract releases funds only on delivery, refunds after a deadline | trust-me play money |
+| **Solana (Pay + escrow)** | a `reference` binds the deal; funds sit in escrow until the buyer releases on delivery (or refunds after a deadline) | trust-me play money |
 
-The goods traded are **real services** the seller fetches on demand — Jupiter swap quotes, CoinGecko
-prices, crypto news headlines, and Claude inference — and the seller's `deliverService()` is the one
-fork point where you add your own.
+The goods traded are **real services** the seller fetches on demand — TxODDS World Cup odds + an LLM
+edge, Jupiter swap quotes, CoinGecko prices, crypto news headlines, and Claude inference — and the
+seller's [`deliverService()`](coral-agents/seller-agent/src/service.ts) is the one fork point where you
+add your own.
 
 ## Prerequisites
 
@@ -29,10 +31,10 @@ Everything runs on **devnet** — free play money, real on-chain settlement. Key
 |------|-----|--------|
 | **Node 20+** | the runtime + agents | [nodejs.org](https://nodejs.org) |
 | **Docker Desktop** (running) | coral-server launches the agents as containers | [docker.com](https://www.docker.com/products/docker-desktop/) |
-| **An LLM key** | the agents' bidding + best-value selection | `ANTHROPIC_API_KEY` (default) — or `LLM_PROVIDER=openai` + `OPENAI_API_KEY` to flip the whole market |
-| **`just`** *(recommended)* | runs the whole setup in one command | `winget install Casey.Just` · `brew install just` · `cargo install just` — [other installs](https://github.com/casey/just#installation) |
+| **An LLM key** | the agents' bidding + best-value selection (and the World Cup edge call) | `ANTHROPIC_API_KEY` (default) — or `LLM_PROVIDER=openai` + `OPENAI_API_KEY` to flip the whole market |
+| **`just`** *(optional)* | runs the whole setup in one command | `winget install Casey.Just` · `brew install just` · `cargo install just` — [other installs](https://github.com/casey/just#installation) |
 
-> **Devnet SOL is generated and funded in step 1 below — you don't need any beforehand.**
+> **Devnet SOL is generated and funded in the quick start — you don't need any beforehand.**
 
 ## Quick start
 
@@ -44,10 +46,11 @@ Everything runs on **devnet** — free play money, real on-chain settlement. Key
 npm run dev        # = node scripts/demo.js
 ```
 
-Brings up a fresh coral, builds the images, mints a TxLINE token, and **opens the dashboard** — the
-whole World Cup demo. It prints **two wallet addresses**; **fund both** at
+Brings up a fresh coral, builds the agent images, mints a TxLINE World Cup token, and **opens the
+dashboard**. It prints **two wallet addresses**; **fund both** at
 [faucet.solana.com](https://faucet.solana.com) (GitHub sign-in — the only devnet faucet that works),
-then click **"Start a market"** in the dashboard.
+then click **"Start a market"** in the dashboard. The mint step is **fault-tolerant**: if TxLINE or
+funding is unavailable it skips cleanly and the dashboard opens for the **generic** market instead.
 
 ### Path B — with `just`
 
@@ -72,27 +75,47 @@ node scripts/dashboard.js                                             # feed + d
 
 ## What you'll see
 
+The headline demo — a **World Cup edge**, delivered and settled on-chain:
+
+```
+[buyer]  round 1: WANT txline 17588245 budget=0.001
+seller-worldcup  BID  round=1 price=0.0005 by=seller-worldcup note=verified World Cup edge
+seller-cheap / -premium / -lazy   …silent — txline isn't in their inventory (self-selection)
+[buyer]  picked seller-worldcup (0.0005 SOL): only bidder with verified World Cup data
+[buyer]  round 1: DEPOSITED 0.0005 SOL → seller-worldcup        # escrow PDA, on-chain
+seller-worldcup  DELIVERED round=1 {"service":"txline-edge","teams":{"home":"…","away":"…"},"analysis":{"call":"…","confidence":0.62}}
+[buyer]  round 1: RELEASED to seller-worldcup — explorer.solana.com/tx/…?cluster=devnet
+```
+
+Without a TxLINE token the **same flow** runs the generic market — e.g. a CoinGecko price:
+
 ```
 [buyer]  round 1: WANT coingecko SOL-USDC budget=0.001
 seller-cheap   BID  round=1 price=0.0002 by=seller-cheap note=undercut
 seller-premium BID  round=1 price=0.0005 by=seller-premium note=verified
-seller-lazy    …silent — coingecko isn't in its inventory (self-selection)
-[buyer]  picked seller-cheap (0.0002 SOL): cheapest for a simple price lookup
-[buyer]  round 1: DEPOSITED 0.0002 SOL → seller-cheap        # escrow PDA, on-chain
-seller-cheap   DELIVERED round=1 {"coin":"solana","usd":…}
-[buyer]  round 1: RELEASED to seller-cheap — explorer.solana.com/tx/…?cluster=devnet
+[buyer]  picked seller-cheap (0.0002 SOL): cheapest for a simple price lookup → DEPOSITED → DELIVERED → RELEASED
 ```
 
 Set `TRACE=1` in `.env` to see every `coral_*` call and on-chain Explorer link (deposit, release, the
 escrow PDA). Flip `LLM_PROVIDER=openai` to run the same market on the sponsor's stack — no code change.
 
-## Under the hood — the three layers
+## Under the hood — the runtime
 
-Three independent layers, all in [`packages/agent-runtime`](packages/agent-runtime) so every agent
-imports them and writes only behaviour. They're wired together by **one shared key** — see the last
-section.
+Everything agents share lives in [`packages/agent-runtime`](packages/agent-runtime) as **four modules**,
+one per concern, so each agent imports them and writes only behaviour. They're stitched together by
+**one shared key** — see the last section.
 
-### 1. CoralOS — the coordination layer (MCP)
+### 1. LLM — the brain
+
+[`llm/complete.ts`](packages/agent-runtime/src/llm/complete.ts) is a single provider-agnostic
+`complete()` over `fetch` (no SDK dependency). Sellers call it to decide whether and at what price to
+bid ([`bidder.ts`](coral-agents/seller-agent/src/bidder.ts)); the buyer calls it to judge best value;
+the World Cup seller calls it to turn de-margined odds into a one-line value call. The model
+**proposes**, code **disposes** — the bidder and the buyer's selection clamp every number to
+floor/budget/inventory, so a prompt injection in a `WANT` (or in fetched data) can't make an agent bid
+at a loss or pay an unseen recipient. `LLM_PROVIDER=openai` flips the whole market with no code change.
+
+### 2. CoralOS — the coordination layer (MCP)
 
 [`coral/mcp.ts`](packages/agent-runtime/src/coral/mcp.ts) speaks the Model Context Protocol over a
 StreamableHTTP transport: it connects to coral-server, discovers its tools, and exposes four primitives:
@@ -105,11 +128,13 @@ StreamableHTTP transport: it connects to coral-server, discovers its tools, and 
 | `send` / `reply` | post into a thread, optionally @-mentioning agents |
 
 The entire market — `WANT → BID → AWARD → ESCROW_REQUIRED → DEPOSITED → DELIVERED` — is just these
-messages over a shared thread. [`startCoralAgent`](packages/agent-runtime/src/coral/server.ts) wires
-the run loop to an `AbortSignal` for clean SIGINT/SIGTERM shutdown. **coral-server never holds a
-keypair** — it coordinates the deal; it never settles it.
+messages over a shared thread. The wire format is pure, unit-tested functions in
+[`market/protocol.ts`](packages/agent-runtime/src/market/protocol.ts) (format/parse + `selectBids`/
+`pickCheapest`). [`startCoralAgent`](packages/agent-runtime/src/coral/server.ts) registers
+`SIGINT`/`SIGTERM` handlers that disconnect from coral and exit cleanly; each agent runs a manual
+mention loop. **coral-server never holds a keypair** — it coordinates the deal; it never settles it.
 
-### 2. Solana Pay — the binding layer
+### 3. Solana Pay — the binding layer
 
 [`solana/pay.ts`](packages/agent-runtime/src/solana/pay.ts) is four functions:
 
@@ -122,13 +147,15 @@ keypair** — it coordinates the deal; it never settles it.
 
 The **`reference`** is a single-use public key attached to a payment as a read-only account. It makes a
 payment proof **non-transferable** — bound to exactly one order — and it's the same key that seeds the
-escrow PDA. Every connection runs through `solanaConnection()`, so the **devnet guard** (throws on a
-mainnet RPC unless `ALLOW_MAINNET=1`) applies to every payment.
+escrow PDA. Every connection — payments **and** the escrow client — is built through
+[`solanaConnection()`](packages/agent-runtime/src/solana/connection.ts), so the **devnet guard** (throws
+on a mainnet RPC unless `ALLOW_MAINNET=1`) applies everywhere value moves.
 
-### 3. Anchor escrow — the settlement layer
+### 4. Anchor escrow — the settlement layer
 
 The only Rust in the kit: a per-order escrow program
-([`lib.rs`](examples/agent-economy/escrow/programs/escrow/src/lib.rs)) with three instructions:
+([`lib.rs`](examples/agent-economy/escrow/programs/escrow/src/lib.rs)) with three instructions, deployed
+to devnet and **called** (not forked) by the agents' TS clients:
 
 | Instruction | Does |
 |-------------|------|
@@ -140,6 +167,18 @@ It's written to the Solana security checklist: `init` (never `init_if_needed`), 
 buyer and seller, `close = buyer` (rent returned, no account revival), and checked math on every lamport
 move. Settlement is **agent-side**: the buyer deposits, the seller verifies the PDA is funded before
 delivering, the buyer releases on delivery (or refunds after the deadline).
+
+**Trust model & limitations** (it's a teaching kit, so the boundaries are explicit):
+
+- The escrow protects the **buyer**: funds are conditional and refundable after the deadline if the
+  seller never delivers. `release` is the buyer's call, so a buyer *could* take delivery and then refund
+  instead of releasing — there is no dispute or auto-release path. A production marketplace would add
+  one (a delivery attestation + seller-claimable release after a window); see
+  [`docs/AUDIT_REMEDIATION.md`](docs/AUDIT_REMEDIATION.md) (F2).
+- The buyer deposits to the payout pubkey carried in `ESCROW_REQUIRED`, and binds it to the wallet it
+  expects for the winner before depositing (F3). In this demo all personas share one receive wallet, so
+  the check is a no-op until you give them distinct wallets.
+- **Devnet only.** Never put a funded mainnet key in `.env`; the guard above is the backstop.
 
 ### How they connect — the `reference`
 
@@ -156,19 +195,21 @@ Solana Pay binds it, the escrow settles it — all pointing at the same `referen
 
 | Directory | Purpose |
 |-----------|---------|
-| `examples/marketplace/` | **the example** — `start.ts` launches the market session |
-| `coral-agents/` | `buyer-agent`, `seller-agent` (+ config-only personas `seller-cheap`/`-premium`/`-lazy`) |
-| `packages/agent-runtime/` | the three pillars: CoralOS client, Solana Pay, the LLM shim, the market protocol |
+| `examples/txodds/` | the **TxODDS World Cup oracle** — the default `npm run dev` demo (mint/proxy server + React app) |
+| `examples/marketplace/` | the generic market — `start.ts` launches the session; `feed/` + `web/` are the e2e-tested React dashboard |
+| `coral-agents/` | `buyer-agent`, `seller-agent` (+ config-only personas `seller-cheap`/`-premium`/`-lazy`/`-worldcup`) |
+| `packages/agent-runtime/` | the runtime — four modules: CoralOS client (`coral/`), Solana Pay + devnet guard (`solana/`), the LLM shim (`llm/`), the market protocol (`market/`) |
 | `examples/agent-economy/escrow/` | the Anchor escrow contract — the settlement spine |
-| `scripts/` | `setup.js` (wallets), `doctor.js` (health check) |
+| `scripts/` | `demo.js` (`npm run dev`), `setup.js` (wallets), `dashboard.js` (feed + UI), `clean.js` (prune containers), `doctor.js` (health check) |
 
 ## Build on it
 
-- **A new seller** — its inventory (`deliverService`) + how it bids (`PERSONA`/`FLOOR_SOL` in its `coral-agent.toml`).
+- **A new seller** — its inventory (`deliverService`) + how it bids (`PERSONA`/`FLOOR_SOL`/`SERVICES` in its `coral-agent.toml`). `seller-worldcup` is a worked example: a specialist that wins only `txline` rounds.
 - **A new buyer** — what it wants + how it judges value (the selection prompt).
 - **A new role / mechanism** — a reseller, an escrow **arbiter** agent, open-cry bidding, on-chain reputation.
 
 Deep dives: **[docs/DATA_PROVIDERS.md](docs/DATA_PROVIDERS.md)** (the data you can sell + where each key goes) ·
+**[examples/txodds/README.md](examples/txodds/README.md)** (the World Cup oracle) ·
 **[escrow/README.md](examples/agent-economy/escrow/README.md)** (the settlement-spine contract).
 
 ## Optional: Claude Code skills
