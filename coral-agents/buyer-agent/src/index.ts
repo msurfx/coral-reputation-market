@@ -10,7 +10,7 @@
  *
  * Env: BUYER_KEYPAIR_B58 (signs), BUYER_MAX_SOL (budget), BUYER_SERVICE/BUYER_ARG (the WANT),
  *      MARKET_SELLERS (csv of seller names), BID_WINDOW_MS, SOLANA_RPC_URL,
- *      ANTHROPIC_API_KEY|OPENAI_API_KEY (+ LLM_PROVIDER), TRACE=1.
+ *      VENICE_API_KEY|ANTHROPIC_API_KEY|OPENAI_API_KEY (+ LLM_PROVIDER), TRACE=1.
  *
  * The deposit/release calls settle against the escrow program deployed to devnet; they need a funded
  * devnet wallet + live RPC, so they run in a live market session rather than in `npm test`/CI.

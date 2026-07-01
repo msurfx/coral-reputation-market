@@ -29,8 +29,11 @@ WANT -> BID* -> AWARD
 `SELLER_WALLET` binds the payout wallet. `BUYER_SERVICE` defaults to `txline`, `BUYER_ARG` defaults to
 an `edge <fixtureId>` style request, and `MARKET_SELLERS` controls the competing sellers.
 
-Use `LLM_PROVIDER=openai` plus `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY`, for best-value bid selection.
-Without a live key, selection falls back to the cheapest valid bid.
+For best-value bid selection set an LLM key — the kit's LLM is **Venice AI** (`LLM_PROVIDER=venice` +
+`VENICE_API_KEY`; new accounts get $50 free via code `IMPERIAL50` at
+[venice.ai/settings/api](https://venice.ai/settings/api)). `ANTHROPIC_API_KEY`, or `LLM_PROVIDER=openai`
++ `OPENAI_API_KEY`, also work. Without a live key, selection falls back to the cheapest valid bid. See
+[LLM.md](../../LLM.md).
 
 ## Test
 

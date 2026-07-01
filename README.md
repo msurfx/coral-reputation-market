@@ -11,6 +11,10 @@ escrow. That's all here and running on devnet. **Fork it, ask an LLM how to turn
 idea, and ship a marketplace in hours.** Every team can hand judges a live **Explorer link** proving the
 payment settled on-chain.
 
+> **Doing the [TxODDS World Cup hackathon](https://superteam.fun/earn/hackathon/world-cup)** ($50K across
+> markets, trading agents, and fan experiences)? This kit already runs on TxODDS' live football API +
+> Solana — **[TXODDS.md](TXODDS.md)** maps it to each track and shows the fork point for each.
+
 ## What you actually build (it's one function)
 
 This kit turns an agent idea into a **settling economy**. You change three things — everything else (the
@@ -22,13 +26,13 @@ payment rails, the escrow, the competitive market, the live board) stays:
 
 Some things agents can sell on these exact rails:
 
-| Idea | what `deliverService()` returns | the buyer is paying for |
-|---|---|---|
-| **Freelancer agent** | ad copy, a landing section, a tweet thread | words that convert |
-| **Research agent** | a sourced brief answering a question | a decision-ready summary |
-| **Broker agent** | routes the job to the best sub-agent, resells at a markup | one call instead of ten |
-| **Oracle agent** | a verified fact / a checked output | trust in a number |
-| **Reseller agent** | packages other agents' services into one | a bundle, one payment |
+| Idea                       | what`deliverService()` returns                          | the buyer is paying for  |
+| -------------------------- | --------------------------------------------------------- | ------------------------ |
+| **Freelancer agent** | ad copy, a landing section, a tweet thread                | words that convert       |
+| **Research agent**   | a sourced brief answering a question                      | a decision-ready summary |
+| **Broker agent**     | routes the job to the best sub-agent, resells at a markup | one call instead of ten  |
+| **Oracle agent**     | a verified fact / a checked output                        | trust in a number        |
+| **Reseller agent**   | packages other agents' services into one                  | a bundle, one payment    |
 
 > **The World Cup oracle is only the default demo — not the product.** It sells a verified, de-margined
 > betting line to prove the rails work end-to-end. The invitation isn't "here's a repo about sports
@@ -48,26 +52,26 @@ WANT ─▶ BID ─▶ AWARD ─▶ DEPOSITED ─▶ DELIVERED ─▶ RELEASED
                  value                               on a no-show)
 ```
 
-| You get, prebuilt | Where | So you don't have to |
-|---|---|---|
-| **LLM brain** (Venice AI) | [`packages/agent-runtime/src/llm`](packages/agent-runtime/src/llm) | wire an LLM SDK, prompts, JSON-guarding |
-| **Agent coordination** (CoralOS / MCP) | [`packages/agent-runtime/src/coral`](packages/agent-runtime/src/coral) | run a message bus, thread state, sessions |
-| **Bidding market** (WANT/BID/AWARD) | [`packages/agent-runtime/src/market`](packages/agent-runtime/src/market) | invent a negotiation protocol |
-| **Frontend state** (live rounds/bids/settlement) | [`examples/marketplace/web`](examples/marketplace/web) | build a React app that streams the market |
-| **Solana Pay** (reference-bound transfers) | [`packages/agent-runtime/src/solana`](packages/agent-runtime/src/solana) | hand-roll payment URLs + verification |
-| **Escrow** (deposit → release / refund) | [`examples/txodds/escrow`](examples/txodds/escrow) | write, audit, and deploy an Anchor program |
+| You get, prebuilt                                      | Where                                                                     | So you don't have to                       |
+| ------------------------------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------ |
+| **LLM brain** (Venice AI)                        | [`packages/agent-runtime/src/llm`](packages/agent-runtime/src/llm)       | wire an LLM SDK, prompts, JSON-guarding    |
+| **Agent coordination** (CoralOS / MCP)           | [`packages/agent-runtime/src/coral`](packages/agent-runtime/src/coral)   | run a message bus, thread state, sessions  |
+| **Bidding market** (WANT/BID/AWARD)              | [`packages/agent-runtime/src/market`](packages/agent-runtime/src/market) | invent a negotiation protocol              |
+| **Frontend state** (live rounds/bids/settlement) | [`examples/marketplace/web`](examples/marketplace/web)                   | build a React app that streams the market  |
+| **Solana Pay** (reference-bound transfers)       | [`packages/agent-runtime/src/solana`](packages/agent-runtime/src/solana) | hand-roll payment URLs + verification      |
+| **Escrow** (deposit → release / refund)         | [`examples/txodds/escrow`](examples/txodds/escrow)                       | write, audit, and deploy an Anchor program |
 
 ## Prerequisites
 
 Everything runs on **devnet** — free play money, real on-chain settlement. Keys live in a local `.env`
 (none in the repo).
 
-| Need | Why | Get it |
-|------|-----|--------|
-| **Node 20+** | the runtime, the demo, the market | [nodejs.org](https://nodejs.org) |
-| **An LLM key** | the agent's reasoning + delivery | **Venice AI** (`VENICE_API_KEY`, **free credits** — see [LLM.md](LLM.md)). Anthropic / OpenAI also work. |
-| **A funded devnet wallet** | the buyer signs the escrow deposit → release | generated in step 1; fund at [faucet.solana.com](https://faucet.solana.com) |
-| **Docker** *(market only)* | coral-server coordinates the multi-agent round | [docker.com](https://www.docker.com) — the single-agent demo needs none |
+| Need                               | Why                                            | Get it                                                                                                                 |
+| ---------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **Node 20+**                 | the runtime, the demo, the market              | [nodejs.org](https://nodejs.org)                                                                                        |
+| **An LLM key**               | the agent's reasoning + delivery               | **Venice AI** (`VENICE_API_KEY`, **free credits** — see [LLM.md](LLM.md)). Anthropic / OpenAI also work. |
+| **A funded devnet wallet**   | the buyer signs the escrow deposit → release  | generated in step 1; fund at[faucet.solana.com](https://faucet.solana.com)                                              |
+| **Docker** *(market only)* | coral-server coordinates the multi-agent round | [docker.com](https://www.docker.com) — the single-agent demo needs none                                                |
 
 ## Quick start
 
@@ -109,13 +113,36 @@ delivery — buyer funds → arbiter releases to the seller, each step linked on
 **The full market (Docker) — buyers + competing sellers.** The complete WANT → … → RELEASED loop:
 
 ```sh
-docker compose up -d coral                     # coral-server (the MCP coordinator)
-bash build-agents.sh                           # build the agent images
-cd examples/marketplace && npm install && npm start
+docker compose up -d coral        # coral-server (the MCP coordinator)
+bash build-agents.sh              # build the agent images (buyer + sellers)
+npm run marketplace               # launch the auction (installs deps on first run)
+npm run marketplace:web           # (optional, 2nd terminal) the React visualizer
 ```
 
 A buyer broadcasts a WANT; LLM sellers compete with bids; the winner is escrowed, delivers, and gets
 released — with a React visualizer of live rounds, bids, and settlement badges.
+
+## Run the examples
+
+One `npm run` per example, from the repo root. **Each command installs that example's deps on first run
+(and builds the runtime if it needs it)** — no manual `npm install`. First do `npm run setup` once (wallets
+→ `.env`) and add your Venice key.
+
+| Command | Runs | Needs |
+|---|---|---|
+| `npm run dev` | **the default demo** — the oracle proxy + UI, auto-settles on delivery | funded wallet + LLM key (renders demo data without) |
+| `npm run demo:coral` | the same oracle as a **multi-agent CoralOS round** (buyer + competing sellers) | Docker + `docker compose up -d coral` + a TxLINE token (`npm --prefix examples/txodds run mint`) |
+| `npm run marketplace` | **the full market** — a buyer + LLM sellers bidding in one session | Docker + `docker compose up -d coral` + `bash build-agents.sh` |
+| `npm run marketplace:web` | the market **visualizer** — live rounds, bids, settlement badges (:5173) | the marketplace feed running |
+| `npm run agent-economy` | **autonomous** agent→agent purchase | Docker + `docker compose up -d coral` |
+| `npm run agent-economy:bridge` | the **human checkout** bridge (HTTP + React) | Docker + `docker compose up -d coral` |
+| `npm run agent-economy:quickstart` | the **bare 402** pay-per-call seller (no Docker, no CoralOS) | LLM key + funded wallet |
+| `npm run agent-economy:quickstart:buyer` | the quickstart **buyer** (run in a 2nd terminal) | the quickstart server running |
+| `npm run agent-economy:web` | the agent-economy **3-tab dashboard** | — (talks to the bridge) |
+
+> **Docker ones** (`marketplace`, `demo:coral`, `agent-economy`, `:bridge`) coordinate over coral-server,
+> so start it first: `docker compose up -d coral`, and `bash build-agents.sh` to build the agent images.
+> **No-Docker ones** (`dev`, `agent-economy:quickstart`, `:web`, `marketplace:web`) run straight from Node.
 
 ## Make it yours
 
@@ -153,12 +180,12 @@ clients. The base escrow ([`escrow/lib.rs`](examples/txodds/escrow/programs/escr
 settlement spine; the arbiter ([`arbiter/lib.rs`](examples/txodds/escrow/programs/arbiter/src/lib.rs)) is
 a trustless wrapper so the buyer can't take delivery **and** refund.
 
-| Program | Instruction | Does |
-|---------|-------------|------|
-| **escrow** `R5NWNg9...CeXet` | `initialize(amount, reference, deadline)` | buyer deposits SOL into a PDA seeded by `(buyer, reference)` |
-| | `release()` / `refund()` | buyer pays the seller on delivery / reclaims after the deadline |
-| **arbiter** `FJtuVXsy...ktXd` | `open(amount, reference, deadline)` | payer funds a **vault PDA** that becomes the escrow's buyer (payer can't claw back) |
-| | `arbitrate_release` / `arbitrate_refund` | only the **neutral arbiter** releases to the seller / refunds the payer |
+| Program                               | Instruction                                  | Does                                                                                     |
+| ------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **escrow** `R5NWNg9...CeXet`  | `initialize(amount, reference, deadline)`  | buyer deposits SOL into a PDA seeded by`(buyer, reference)`                            |
+|                                       | `release()` / `refund()`                 | buyer pays the seller on delivery / reclaims after the deadline                          |
+| **arbiter** `FJtuVXsy...ktXd` | `open(amount, reference, deadline)`        | payer funds a**vault PDA** that becomes the escrow's buyer (payer can't claw back) |
+|                                       | `arbitrate_release` / `arbitrate_refund` | only the**neutral arbiter** releases to the seller / refunds the payer             |
 
 The escrow `reference` is **bound to the delivery** (`sha256(...)`), so the on-chain order provably *is*
 the thing bought. Written to the Solana security checklist: `init` (never `init_if_needed`), `has_one` on
@@ -168,15 +195,15 @@ deployed ids with no local build. **Devnet only** — never put a funded mainnet
 
 ## Repo layout
 
-| Directory | Purpose |
-|-----------|---------|
-| `examples/txodds/` | **the default demo** — the World Cup oracle. `agent/` (`service.ts` = the `deliverService()` fork point; `edge.ts` = its transform; escrow/arbiter clients), `server/` (proxy + mint), `web/` (React board), `escrow/` (the two Anchor programs) |
-| `examples/marketplace/` | **the full market** — a buyer + competing sellers in one CoralOS session; `feed/` (SSE feed → rounds), `web/` (React visualizer). Needs Docker |
-| `examples/agent-economy/` | **three front doors** on CoralOS — autonomous (agent→agent), a human checkout bridge, and a bare 402 pay-per-call quickstart |
-| `coral-agents/` | the agents coral-server launches per session — `buyer-agent`, `seller-agent` (+ personas), `broker` (swarm reseller), `echo-agent`, `user_proxy` |
-| `packages/agent-runtime/` | the runtime — `llm/`, `solana/`, `coral/`, `market/` |
-| `scripts/` | `txodds.js` (`npm run dev`), `setup.js` (devnet wallets) |
-| `docker-compose.yml` | coral-server (the MCP coordinator) for the market |
+| Directory                   | Purpose                                                                                                                                                                                                                                                               |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `examples/txodds/`        | **the default demo** — the World Cup oracle. `agent/` (`service.ts` = the `deliverService()` fork point; `edge.ts` = its transform; escrow/arbiter clients), `server/` (proxy + mint), `web/` (React board), `escrow/` (the two Anchor programs) |
+| `examples/marketplace/`   | **the full market** — a buyer + competing sellers in one CoralOS session; `feed/` (SSE feed → rounds), `web/` (React visualizer). Needs Docker                                                                                                            |
+| `examples/agent-economy/` | **three front doors** on CoralOS — autonomous (agent→agent), a human checkout bridge, and a bare 402 pay-per-call quickstart                                                                                                                                  |
+| `coral-agents/`           | the agents coral-server launches per session —`buyer-agent`, `seller-agent` (+ personas), `broker` (swarm reseller), `echo-agent`, `user_proxy`                                                                                                            |
+| `packages/agent-runtime/` | the runtime —`llm/`, `solana/`, `coral/`, `market/`                                                                                                                                                                                                          |
+| `scripts/`                | `txodds.js` (`npm run dev`), `setup.js` (devnet wallets)                                                                                                                                                                                                        |
+| `docker-compose.yml`      | coral-server (the MCP coordinator) for the market                                                                                                                                                                                                                     |
 
 ## The LLM: Venice AI
 

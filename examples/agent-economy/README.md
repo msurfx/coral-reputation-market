@@ -30,7 +30,7 @@ fabric — a pure MCP message bus. Payments are settled agent-side in SOL, so co
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) running (coral-server launches the agents)
 - [Node.js 20+](https://nodejs.org)
-- A funded devnet wallet + (optional) Anthropic key — see the [root README](../../README.md#-keys--accounts-you-need). Generate with `node ../../scripts/setup.js`.
+- A funded devnet wallet + an LLM key — the kit's LLM is **Venice AI** (`LLM_PROVIDER=venice` + `VENICE_API_KEY`; new accounts get $50 free via code `IMPERIAL50`), or Anthropic/OpenAI. See [LLM.md](../../LLM.md). Generate the wallet with `node ../../scripts/setup.js`.
 - For the human door: [Phantom](https://phantom.com) set to **Devnet**.
 
 ## Build the agent images once

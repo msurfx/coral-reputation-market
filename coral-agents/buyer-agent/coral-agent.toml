@@ -27,7 +27,8 @@ SOLANA_RPC_URL = { type = "string", default = "", description = "Solana RPC URL 
 SETTLEMENT_MODE = { type = "string", default = "arbiter", description = "arbiter (default) | direct legacy base escrow" }
 ANTHROPIC_API_KEY = { type = "string", default = "", description = "Anthropic key (default brain for best-value selection)" }
 OPENAI_API_KEY = { type = "string", default = "", description = "OpenAI key - set with LLM_PROVIDER=openai to flip the brain" }
-LLM_PROVIDER = { type = "string", default = "", description = "anthropic (default) | openai" }
+VENICE_API_KEY = { type = "string", default = "", description = "Venice AI key (OpenAI-compatible, free credits) - set with LLM_PROVIDER=venice to flip the brain" }
+LLM_PROVIDER = { type = "string", default = "", description = "anthropic (default) | openai | venice" }
 LLM_MODEL = { type = "string", default = "", description = "Override the LLM model id" }
 TRACE = { type = "string", default = "", description = "Set to 1 to log CoralOS calls + on-chain steps (Explorer links)" }
 

@@ -14,11 +14,11 @@ is a few lines).
 
 The LLM is the agent's brain across the loop:
 
-| Where | What it does | Falls back to |
-|-------|--------------|---------------|
-| **Seller — the delivery**: your [`deliverService()`](examples/txodds/agent/service.ts) | turns a paid request into the thing sold (the default demo: a verified odds read via `analyzeEdge()`) | a **deterministic** delivery — so it never breaks with no key |
-| **Seller — bidding** ([`coral-agents/seller-agent`](coral-agents/seller-agent)) | prices a WANT and competes on value | a floor-price bid |
-| **Buyer — value** ([`coral-agents/buyer-agent`](coral-agents/buyer-agent)) | reasons about bids and picks a winner | cheapest-that-clears |
+| Where                                                                                          | What it does                                                                                           | Falls back to                                                       |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| **Seller — the delivery**: your [`deliverService()`](examples/txodds/agent/service.ts) | turns a paid request into the thing sold (the default demo: a verified odds read via`analyzeEdge()`) | a**deterministic** delivery — so it never breaks with no key |
+| **Seller — bidding** ([`coral-agents/seller-agent`](coral-agents/seller-agent))        | prices a WANT and competes on value                                                                    | a floor-price bid                                                   |
+| **Buyer — value** ([`coral-agents/buyer-agent`](coral-agents/buyer-agent))             | reasons about bids and picks a winner                                                                  | cheapest-that-clears                                                |
 
 If there's **no key (or the account is out of credits)**, the call throws and the code uses the
 deterministic fallback, so everything still runs — the demo UI shows a **`deterministic`** badge instead
@@ -28,14 +28,14 @@ of `LLM` so you can tell.
 
 All live in the repo-root **`.env`** (gitignored - never committed). `.env.example` shows the empty fields.
 
-| Var | Meaning |
-|-----|---------|
-| `VENICE_API_KEY` | **Venice AI key — the kit's LLM.** Free credits; OpenAI-compatible. From [venice.ai/settings/api](https://venice.ai/settings/api). |
-| `LLM_PROVIDER` | Which provider: `venice` (recommended), `openai`, or `anthropic`. |
-| `OPENAI_API_KEY` | OpenAI key (`sk-...`) — alternative provider. |
-| `ANTHROPIC_API_KEY` | Anthropic key (`sk-ant-...`) — alternative provider. |
-| `LLM_MODEL` | Override the model id. Optional (sensible per-provider default otherwise). |
-| `TRACE` | `1` -> log the chosen provider/model + the raw reply. |
+| Var                   | Meaning                                                                                                                                  |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `VENICE_API_KEY`    | **Venice AI key — the kit's LLM.** Free credits; OpenAI-compatible. From [venice.ai/settings/api](https://venice.ai/settings/api). |
+| `LLM_PROVIDER`      | Which provider:`venice` (recommended), `openai`, or `anthropic`.                                                                   |
+| `OPENAI_API_KEY`    | OpenAI key (`sk-...`) — alternative provider.                                                                                         |
+| `ANTHROPIC_API_KEY` | Anthropic key (`sk-ant-...`) — alternative provider.                                                                                  |
+| `LLM_MODEL`         | Override the model id. Optional (sensible per-provider default otherwise).                                                               |
+| `TRACE`             | `1` -> log the chosen provider/model + the raw reply.                                                                                  |
 
 ## How the provider is chosen
 
@@ -55,28 +55,33 @@ Default models (override with `LLM_MODEL`): Venice `llama-3.3-70b` — OpenAI `g
 ## Set it up — copy/paste
 
 **Venice AI — the kit's LLM (recommended, free credits):**
+
 ```ini
 LLM_PROVIDER=venice
 VENICE_API_KEY=...
 # LLM_MODEL=llama-3.3-70b   # optional override
 ```
+
 Get a key at [venice.ai/settings/api](https://venice.ai/settings/api). New accounts can redeem code
 **`IMPERIAL50`** at the bottom of that page for **$50 in free credits**. (It's a public referral code —
 may be per-account, rate-limited, or expire.)
 
 **OpenAI (alternative):**
+
 ```ini
 LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 ```
 
 **Anthropic (alternative):**
+
 ```ini
 LLM_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 **Pin a specific model:**
+
 ```ini
 LLM_PROVIDER=venice
 VENICE_API_KEY=...
@@ -90,6 +95,7 @@ Env vars are the fast path, but everything lives in one file -
 change the provider **in code** too.
 
 **Override the model per call** (wins over `LLM_MODEL` and the per-provider default):
+
 ```ts
 import { complete } from '@pay/agent-runtime'
 
@@ -110,6 +116,7 @@ const text = await complete({
 4. Dispatch to a `complete*()` in `complete()`.
 
 **If it's OpenAI-compatible** (like Venice), step 4 is a one-liner - reuse the shared request shape:
+
 ```ts
 async function completeYours(opts: CompleteOpts, model: string, maxTokens: number): Promise<string> {
   const key = process.env.YOURS_API_KEY
@@ -121,11 +128,11 @@ async function completeYours(opts: CompleteOpts, model: string, maxTokens: numbe
   })
 }
 ```
+
 That's exactly how `completeVenice()` is built - it just points `completeOpenAICompatible()` at Venice's
 base URL. A provider with a different wire format (like Anthropic's) gets its own `complete*()` instead.
 
-After editing the runtime, **rebuild it** so dependents pick up the change: `cd packages/agent-runtime &&
-npm run build` (the `examples/txodds` `file:` dep reads `dist/`).
+After editing the runtime, **rebuild it** so dependents pick up the change: `cd packages/agent-runtime && npm run build` (the `examples/txodds` `file:` dep reads `dist/`).
 
 ## Apply a change
 

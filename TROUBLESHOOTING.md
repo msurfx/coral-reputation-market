@@ -50,8 +50,12 @@ renders clearly-labelled sample data while the proxy is unavailable.
 
 The LLM call failed and fell back to the deterministic pick. Almost always the API key:
 
-- No key, or the wrong one, in `.env` (`ANTHROPIC_API_KEY`, or `LLM_PROVIDER=openai` + `OPENAI_API_KEY`).
-- **Out of credits** — Anthropic returns `400 … credit balance is too low`. Top up, or switch providers.
+- No key, or the wrong one, in `.env` — the kit's LLM is **Venice AI** (`LLM_PROVIDER=venice` +
+  `VENICE_API_KEY`; new accounts get $50 free via code `IMPERIAL50` at
+  [venice.ai/settings/api](https://venice.ai/settings/api)). `ANTHROPIC_API_KEY`, or `LLM_PROVIDER=openai`
+  + `OPENAI_API_KEY`, also work.
+- **Out of credits** — the provider returns a `400 … credit balance is too low`. Top up, or switch
+  providers (Venice gives new accounts free credits). See [LLM.md](LLM.md).
 
 Restart `npm run dev` after changing `.env` (the proxy reads it at startup).
 

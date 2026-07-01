@@ -11,7 +11,7 @@
  *   Browser → POST /order/:reference/paid { sig }     → { status: 'delivered', data }
  *
  * Env: CORAL_SERVER_URL, CORAL_TOKEN, SELLER_WALLET (required), PRICE_SOL, SERVICE,
- *      SOLANA_RPC_URL, ANTHROPIC_API_KEY, PORT (default 3010).
+ *      SOLANA_RPC_URL, VENICE_API_KEY|ANTHROPIC_API_KEY|OPENAI_API_KEY (+ LLM_PROVIDER), PORT (default 3010).
  */
 import express from 'express'
 import { fileURLToPath } from 'node:url'
@@ -28,6 +28,11 @@ const PRICE_SOL = process.env.PRICE_SOL ?? '0.0001'
 const SERVICE = process.env.SERVICE ?? 'jupiter'
 const RPC = process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com'
 const ANTHROPIC = process.env.ANTHROPIC_API_KEY ?? ''
+// LLM provider keys — the kit's LLM is Venice AI; openai/anthropic also work with no code change (see LLM.md).
+const VENICE = process.env.VENICE_API_KEY ?? ''
+const OPENAI = process.env.OPENAI_API_KEY ?? ''
+const LLM_PROVIDER = process.env.LLM_PROVIDER ?? ''
+const LLM_MODEL = process.env.LLM_MODEL ?? ''
 const NEWS_API_KEY = process.env.NEWS_API_KEY ?? ''
 const JUPITER_API_KEY = process.env.JUPITER_API_KEY ?? ''
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY ?? ''
@@ -44,9 +49,19 @@ const SWARM_MARKUP = Number(process.env.SWARM_MARKUP ?? '1.2')
 const str = (value: string) => ({ type: 'string', value })
 const f64 = (value: number) => ({ type: 'f64', value })
 
-/** Forward any configured service API keys to the seller agent (declared in its coral-agent.toml). */
-const addSellerKeys = (opts: Record<string, unknown>) => {
+/** Forward whichever LLM provider keys are set (kit LLM = Venice; openai/anthropic also work — see LLM.md). */
+const addLlmKeys = (opts: Record<string, unknown>) => {
+  if (VENICE) opts.VENICE_API_KEY = str(VENICE)
+  if (OPENAI) opts.OPENAI_API_KEY = str(OPENAI)
   if (ANTHROPIC) opts.ANTHROPIC_API_KEY = str(ANTHROPIC)
+  if (LLM_PROVIDER) opts.LLM_PROVIDER = str(LLM_PROVIDER)
+  if (LLM_MODEL) opts.LLM_MODEL = str(LLM_MODEL)
+  return opts
+}
+
+/** Forward the LLM keys plus any configured service API keys to the seller agent (declared in its coral-agent.toml). */
+const addSellerKeys = (opts: Record<string, unknown>) => {
+  addLlmKeys(opts)
   if (NEWS_API_KEY) opts.NEWS_API_KEY = str(NEWS_API_KEY)
   if (JUPITER_API_KEY) opts.JUPITER_API_KEY = str(JUPITER_API_KEY)
   if (HELIUS_API_KEY) opts.HELIUS_API_KEY = str(HELIUS_API_KEY)
@@ -214,7 +229,7 @@ app.post('/autonomous/start', async (_req, res) => {
     const sellerOpts: Record<string, unknown> = { SELLER_WALLET: str(SELLER_WALLET), SOLANA_RPC_URL: str(RPC), SERVICE: str(SERVICE) }
     const buyerOpts: Record<string, unknown> = { BUYER_KEYPAIR_B58: str(BUYER_KEYPAIR_B58), SOLANA_RPC_URL: str(RPC), BUYER_MAX_SOL: f64(BUYER_MAX_SOL) }
     addSellerKeys(sellerOpts)
-    if (ANTHROPIC) buyerOpts.ANTHROPIC_API_KEY = str(ANTHROPIC)
+    addLlmKeys(buyerOpts)
 
     const r = await fetch(`${BASE}/api/v1/local/session`, {
       method: 'POST', headers: AUTH,
@@ -267,7 +282,7 @@ app.post('/swarm/start', async (_req, res) => {
       QUOTE_WAIT_MS: f64(60000), DELIVERY_WAIT_MS: f64(55000), CYCLE_INTERVAL_MS: f64(20000),
       BUYER_MAX_SOL: f64(0.02),
     }
-    if (ANTHROPIC) buyerOpts.ANTHROPIC_API_KEY = str(ANTHROPIC)
+    addLlmKeys(buyerOpts)
     const brokerOpts: Record<string, unknown> = {
       BROKER_KEYPAIR_B58: str(BROKER_KEYPAIR_B58), SELLER_WALLET: str(BROKER_WALLET),
       SWARM_SELLERS: str('seller-cheap,seller-premium'), MARKUP: f64(SWARM_MARKUP),

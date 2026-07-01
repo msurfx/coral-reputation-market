@@ -10,9 +10,12 @@ WANT → (sellers bid) → AWARD best value → deposit (escrow) → DELIVERED �
 
 ## Run it
 
-Prereqs: Docker, a funded devnet wallet pair (`node scripts/setup.js`), and an `ANTHROPIC_API_KEY`
-in `.env` (or `LLM_PROVIDER=openai` + `OPENAI_API_KEY` to run the whole market on OpenAI). The escrow
-program is already deployed to devnet — no `anchor deploy` needed to run the demo.
+Prereqs: Docker, a funded devnet wallet pair (`node scripts/setup.js`), and an LLM key in `.env` — the
+kit's LLM is **Venice AI** (`LLM_PROVIDER=venice` + `VENICE_API_KEY`; new accounts get $50 free via code
+`IMPERIAL50` at [venice.ai/settings/api](https://venice.ai/settings/api)). `ANTHROPIC_API_KEY`, or
+`LLM_PROVIDER=openai` + `OPENAI_API_KEY`, run the whole market on that provider instead — no code change
+(see [../../LLM.md](../../LLM.md)). The escrow program is already deployed to devnet — no `anchor deploy`
+needed to run the demo.
 
 ```sh
 bash build-agents.sh seller buyer          # build the two agent images (sellers reuse the seller image)
@@ -45,7 +48,7 @@ seller-cheap   DELIVERED round=1 {"coin":"solana","usd":…}
 | Var | Effect |
 |-----|--------|
 | `BUYER_SERVICE` | what the buyer shops for (`coingecko` → cheap+premium bid, lazy sits out) |
-| `LLM_PROVIDER=openai` | flip the whole market to the sponsored OpenAI key — no code change |
+| `LLM_PROVIDER=venice\|openai` | flip the whole market to another provider — no code change (Venice is the kit default) |
 | `TRACE=1` | log the `coral_*` calls + Explorer links for the escrow PDA, deposit, and release |
 | `BUYER_MAX_SOL` | the budget cap each round |
 
@@ -65,7 +68,7 @@ It's e2e-tested with fixtures (no devnet needed) — see [`web/`](web/README.md)
 
 - **Drop in a competitor live:** add a fourth seller to `start.ts`'s graph — it bids next round with
   zero buyer edits.
-- **Flip the brain:** set `LLM_PROVIDER=openai` and re-run — same market, the sponsor's stack.
+- **Flip the brain:** set `LLM_PROVIDER=venice` (or `openai`) and re-run — same market, a different LLM stack.
 
 See [`docs/MARKETPLACE.md`](../../docs/MARKETPLACE.md) for the full protocol, the escrow flow, and the
 "under the hood" walkthrough.

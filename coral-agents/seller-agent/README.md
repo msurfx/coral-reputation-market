@@ -34,8 +34,10 @@ not part of the TxODDS CoralOS seller loop.
 `SELLER_WALLET`, `AGENT_NAME`, `SERVICES=txline`, `FLOOR_SOL`, `PERSONA`, `SETTLEMENT_MODE=arbiter`,
 `ESCROW_DEADLINE_SECS`, `SOLANA_RPC_URL`, and `TXLINE_API_KEY`.
 
-Use `ANTHROPIC_API_KEY`, or `LLM_PROVIDER=openai` plus `OPENAI_API_KEY`, for live analysis. Without a
-live key, `service.ts` returns a deterministic odds read and labels it as fallback.
+For live analysis set an LLM key — the kit's LLM is **Venice AI** (`LLM_PROVIDER=venice` + `VENICE_API_KEY`;
+new accounts get $50 free via code `IMPERIAL50` at [venice.ai/settings/api](https://venice.ai/settings/api)).
+`ANTHROPIC_API_KEY`, or `LLM_PROVIDER=openai` + `OPENAI_API_KEY`, also work — no code change. Without a
+live key, `service.ts` returns a deterministic odds read and labels it as fallback. See [LLM.md](../../LLM.md).
 
 ## Test
 

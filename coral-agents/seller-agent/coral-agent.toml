@@ -25,7 +25,8 @@ TXLINE_API_KEY = { type = "string", default = "", description = "Activated TxLIN
 TXLINE_BASE_URL = { type = "string", default = "", description = "Override the TxLINE host" }
 ANTHROPIC_API_KEY = { type = "string", default = "", description = "Anthropic key for live reads" }
 OPENAI_API_KEY = { type = "string", default = "", description = "OpenAI key; set LLM_PROVIDER=openai to use it" }
-LLM_PROVIDER = { type = "string", default = "", description = "anthropic (default) | openai" }
+VENICE_API_KEY = { type = "string", default = "", description = "Venice AI key (OpenAI-compatible, free credits); set LLM_PROVIDER=venice to use it" }
+LLM_PROVIDER = { type = "string", default = "", description = "anthropic (default) | openai | venice" }
 LLM_MODEL = { type = "string", default = "", description = "Override the LLM model id" }
 TRACE = { type = "string", default = "", description = "Set to 1 to log settlement checks" }
 

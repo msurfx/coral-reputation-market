@@ -42,9 +42,16 @@ From the repo root (this is what `npm run dev` does):
 
 ```sh
 npm install --prefix scripts && node scripts/setup.js   # devnet wallets -> .env (fund the buyer)
-# add ANTHROPIC_API_KEY to .env, then:
+# add an LLM key to .env, then:
 npm run dev            # proxy (:8801) + Oracle UI (:3020), opens the browser
 ```
+
+**The LLM key** is the agent's brain (the one-line read). The kit's LLM is **Venice AI** — new accounts
+redeem code **`IMPERIAL50`** at [venice.ai/settings/api](https://venice.ai/settings/api) for **$50 in
+free credits**, then set `LLM_PROVIDER=venice` + `VENICE_API_KEY=...`. Anthropic (`ANTHROPIC_API_KEY`)
+and OpenAI (`LLM_PROVIDER=openai` + `OPENAI_API_KEY`) work too — no code change. Full switching, and how
+to add a provider in code: **[../../LLM.md](../../LLM.md)**. Without a key the board still renders and
+the read falls back to a deterministic one.
 
 Or run the two processes by hand from `examples/txodds/`:
 
