@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  server: { proxy: { '/api': 'http://localhost:4000' } },
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'], // tests/ holds Playwright e2e, run separately
