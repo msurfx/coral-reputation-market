@@ -111,3 +111,9 @@ body { margin: 0; background: var(--bg); color: var(--txt); }
 
 .stage-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); margin: 10px 0 0; cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; }
 .stage-hint { color: var(--dim); }
+
+.pending { padding: 48px 0; text-align: center; }
+.pending-bar { width: 220px; height: 4px; margin: 0 auto 16px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.pending-fill { width: 40%; height: 100%; background: var(--coral); border-radius: 999px; animation: slide 1.4s ease-in-out infinite; }
+.pending-text { color: var(--dim); font-size: 13px; }
+@keyframes slide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
