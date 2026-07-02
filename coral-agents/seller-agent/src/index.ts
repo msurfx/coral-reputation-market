@@ -24,6 +24,9 @@ const ESCROW_DEADLINE_SECS = Number(process.env.ESCROW_DEADLINE_SECS ?? '600')
 const SETTLEMENT_MODE = (process.env.SETTLEMENT_MODE ?? 'arbiter').toLowerCase() === 'direct' ? 'direct' : 'arbiter'
 const cfg = sellerConfigFromEnv(NAME)
 const trace = process.env.TRACE === '1'
+// Demo-only: simulate a no-show delivery on specific rounds (comma-separated), to stage a
+// reputation drop for the buyer's reputation-weighted scoring to visibly react to.
+const FAIL_ROUNDS = new Set((process.env.FAIL_ROUNDS ?? '').split(',').map((s) => s.trim()).filter(Boolean).map(Number))
 
 interface Quote { service: string; arg: string; priceSol: number }
 const quoted = new Map<number, Quote>()
@@ -103,6 +106,10 @@ await startCoralAgent({ agentName: NAME }, async (ctx) => {
             continue
           }
           awarded.delete(deposited.reference)
+          if (FAIL_ROUNDS.has(deposited.round)) {
+            console.error(`[${NAME}] round ${deposited.round}: SIMULATED NO-SHOW (FAIL_ROUNDS) — funds stay in escrow, buyer will see this as a failed delivery`)
+            continue
+          }
           if (trace) console.error(`[${NAME}] escrow funded via ${deposited.settlement ?? 'direct'} -> delivering round ${deposited.round}`)
           const result = await deliverService(`${order.service} ${order.arg}`.trim())
           await ctx.reply(mention, `DELIVERED round=${deposited.round} ${result}`)
