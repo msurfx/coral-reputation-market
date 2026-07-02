@@ -39,3 +39,4 @@ export interface Feed {
 }
 
 export const explorerTx = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`
+export const solscanTx = (sig: string) => `https://solscan.io/tx/${sig}?cluster=devnet`

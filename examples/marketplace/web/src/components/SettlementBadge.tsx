@@ -1,16 +1,12 @@
-import { explorerTx } from '../types'
+import { explorerTx, solscanTx } from '../types'
 
-/** A settlement step with a clickable devnet Explorer link for its signature. */
+/** A settlement step with clickable devnet Explorer + Solscan links for its signature. */
 export function SettlementBadge({ label, sig }: { label: string; sig: string }) {
   return (
-    <a
-      className="settle"
-      data-testid="settle"
-      href={explorerTx(sig)}
-      target="_blank"
-      rel="noreferrer"
-    >
-      {label} ↗
-    </a>
+    <span className="settle-group" data-testid="settle">
+      <span className="settle-label">{label}</span>
+      <a className="settle" href={explorerTx(sig)} target="_blank" rel="noreferrer">Explorer ↗</a>
+      <a className="settle" href={solscanTx(sig)} target="_blank" rel="noreferrer">Solscan ↗</a>
+    </span>
   )
 }
