@@ -7,6 +7,14 @@ export interface RoundBid {
   note?: string
 }
 
+export interface ScoredBid {
+  by: string
+  price: number
+  priceScore: number
+  repPct: number
+  total: number
+}
+
 export type RoundStatus = 'bidding' | 'awarded' | 'deposited' | 'delivered' | 'settled' | 'refunded'
 
 export interface Round {
@@ -14,6 +22,7 @@ export interface Round {
   want?: { service: string; arg: string; budgetSol: number }
   bids: RoundBid[]
   declined: string[]
+  scores?: Record<string, ScoredBid>
   award?: { to: string; reason?: string }
   escrow?: { reference: string; seller: string; amountSol: number; deadlineSecs: number }
   deposit?: { sig: string; buyer: string }

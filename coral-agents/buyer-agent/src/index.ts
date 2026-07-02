@@ -1,24 +1,26 @@
 /**
  * Buyer agent - the marketplace buyer. Broadcasts a WANT into a shared CoralOS thread, collects
- * competing LLM bids, picks the best value, and settles through the escrow contract:
+ * competing bids, picks the winner by REPUTATION-WEIGHTED SCORING (price AND on-chain-proven track
+ * record, not price alone), and settles through the escrow contract:
  *
- *   WANT -> (collect BIDs for a window) -> AWARD winner -> wait ESCROW_REQUIRED ->
+ *   WANT -> (collect BIDs for a window) -> SCORE + AWARD winner -> wait ESCROW_REQUIRED ->
  *   deposit() into escrow -> DEPOSITED -> wait DELIVERED -> release() to the seller
  *
- * Selection uses the LLM (best value), with a deterministic cheapest fallback so a slow/missing model
- * never hangs the round. Settlement is escrow-only - funds are conditional on delivery.
+ * Scoring: score = priceScore * PRICE_WEIGHT + reputationScore * REPUTATION_WEIGHT, both 0-100.
+ * Reputation is built in-memory from this session's own settled rounds (completed vs failed
+ * deliveries) — an unproven seller starts at a neutral 50, so price alone decides early rounds.
  *
  * Env: BUYER_KEYPAIR_B58 (signs), BUYER_MAX_SOL (budget), BUYER_SERVICE/BUYER_ARG (the WANT),
  *      MARKET_SELLERS (csv of seller names), BID_WINDOW_MS, SOLANA_RPC_URL,
- *      VENICE_API_KEY|ANTHROPIC_API_KEY|OPENAI_API_KEY (+ LLM_PROVIDER), TRACE=1.
+ *      PRICE_WEIGHT (default 0.6), REPUTATION_WEIGHT (default 0.4), TRACE=1.
  *
  * The deposit/release calls settle against the escrow program deployed to devnet; they need a funded
  * devnet wallet + live RPC, so they run in a live market session rather than in `npm test`/CI.
  */
 import {
-  startCoralAgent, complete, parseJsonReply, loadKeypairB58,
+  startCoralAgent, loadKeypairB58,
   formatWant, parseBid, parseEscrowRequired, formatAward, formatDeposited,
-  selectBids, pickCheapest, verb, messageRound,
+  selectBids, verb, messageRound,
   type Bid, type EscrowTerms, type CoralAgentContext,
 } from '@pay/agent-runtime'
 import { PublicKey } from '@solana/web3.js'
@@ -49,26 +51,42 @@ const trace = process.env.TRACE === '1'
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const expl = (kind: 'tx' | 'address', id: string) => `https://explorer.solana.com/${kind}/${id}?cluster=devnet`
 
-/** Best-value selection via LLM; deterministic cheapest fallback. Returns the winner + its reasoning. */
-async function pickWinner(pool: Bid[]): Promise<{ winner: Bid; reason?: string }> {
-  if (pool.length === 1) return { winner: pool[0] }
-  try {
-    const system =
-      'You are a buyer choosing the best-value bid for a Solana data service. ' +
-      'Reply ONLY with JSON {"by": "<seller name>", "reason": "<short>"}.'
-    const user =
-      `service=${SERVICE} arg=${ARG} budget=${BUDGET}\nbids:\n` +
-      pool.map((b) => `- ${b.by}: ${b.priceSol} SOL${b.note ? ` (${b.note})` : ''}`).join('\n')
-    const parsed = parseJsonReply<{ by?: string; reason?: string }>(await complete({ system, user, maxTokens: 100 }))
-    const chosen = pool.find((b) => b.by === parsed?.by)
-    if (chosen) {
-      console.error(`[buyer] picked ${chosen.by} (${chosen.priceSol} SOL): ${parsed?.reason ?? ''}`)
-      return { winner: chosen, reason: parsed?.reason }
-    }
-  } catch {
-    /* fall through to deterministic choice */
+// -- reputation-weighted bid scoring ------------------------------------------------------------
+// Named weights so the demo is easy to explain to judges: "we weigh reputation at 40%, price at 60%".
+const PRICE_WEIGHT = Number(process.env.PRICE_WEIGHT ?? '0.6')
+const REPUTATION_WEIGHT = Number(process.env.REPUTATION_WEIGHT ?? '0.4')
+
+// Reputation ledger — built from this session's own settled rounds. No decay, no persistence across
+// sessions (v1 scope): completed vs failed deliveries only. Real money-can't-fake-it signal because
+// it's derived from actual on-chain settlement outcomes (RELEASED), not a self-reported claim.
+const reputation = new Map<string, { completed: number; failed: number }>()
+const bumpReputation = (seller: string, key: 'completed' | 'failed') => {
+  const r = reputation.get(seller) ?? { completed: 0, failed: 0 }
+  r[key]++
+  reputation.set(seller, r)
+}
+/** 0-100 success rate. An unproven seller starts at a neutral 50 — no penalty or bonus on debut. */
+const reputationScore = (seller: string): number => {
+  const r = reputation.get(seller)
+  if (!r || r.completed + r.failed === 0) return 50
+  return Math.round((r.completed / (r.completed + r.failed)) * 100)
+}
+
+interface ScoredBid { by: string; price: number; priceScore: number; repPct: number; total: number }
+
+/** Deterministic reputation-weighted selection: price AND on-chain-proven track record, not price alone. */
+function scoreBids(pool: Bid[]): { scores: Record<string, ScoredBid>; winner: Bid } {
+  const scores: Record<string, ScoredBid> = {}
+  let winner = pool[0]
+  let bestTotal = -Infinity
+  for (const b of pool) {
+    const priceScore = Math.max(0, Math.min(100, Math.round(((BUDGET - b.priceSol) / BUDGET) * 100)))
+    const repPct = reputationScore(b.by)
+    const total = Math.round(priceScore * PRICE_WEIGHT + repPct * REPUTATION_WEIGHT)
+    scores[b.by] = { by: b.by, price: b.priceSol, priceScore, repPct, total }
+    if (total > bestTotal) { bestTotal = total; winner = b }
   }
-  return { winner: pickCheapest(pool)!, reason: 'cheapest available' }
+  return { scores, winner }
 }
 
 /** Wait (bounded) for a message matching `round` that `parse` accepts. */
@@ -91,7 +109,7 @@ async function waitFor<T>(
 await startCoralAgent({ agentName: process.env.AGENT_NAME ?? 'buyer-agent' }, async (ctx) => {
   const buyer = loadKeypairB58('BUYER_KEYPAIR_B58')
   const arbiter = SETTLEMENT_MODE === 'arbiter' ? loadKeypairB58('ARBITER_KEYPAIR_B58') : null
-  console.error(`[buyer] market buyer - wallet=${buyer.publicKey.toBase58()} budget=${BUDGET} sellers=[${SELLERS.join(',')}]`)
+  console.error(`[buyer] market buyer - wallet=${buyer.publicKey.toBase58()} budget=${BUDGET} sellers=[${SELLERS.join(',')}] price=${PRICE_WEIGHT} reputation=${REPUTATION_WEIGHT}`)
 
   for (const s of SELLERS) {
     try { await ctx.waitForAgent(s, 8000) } catch { /* seller may already be present */ }
@@ -123,15 +141,23 @@ await startCoralAgent({ agentName: process.env.AGENT_NAME ?? 'buyer-agent' }, as
       const pool = selectBids(bids, round)
       if (pool.length === 0) { console.error(`[buyer] round ${round}: NO_SELLERS`); await sleep(CYCLE_MS); continue }
 
-      // -- award the best value ----------------------------------------------
-      const { winner, reason } = await pickWinner(pool)
+      // -- award: price AND on-chain-proven reputation, not price alone ------
+      const { scores, winner } = scoreBids(pool)
+      console.error(`[buyer] round ${round}: scores ${JSON.stringify(scores)}`)
+      await ctx.send(`SCORES round=${round} ${JSON.stringify(scores)}`, thread, SELLERS)
+      const reason = `price ${Math.round(PRICE_WEIGHT * 100)}% + reputation ${Math.round(REPUTATION_WEIGHT * 100)}% -> score ${scores[winner.by].total}`
       await ctx.send(formatAward(round, winner.by, reason), thread, [winner.by])
 
       // -- settle through escrow: deposit -> DEPOSITED -> wait DELIVERED -> release
       const terms = await waitFor<EscrowTerms>(ctx, round, parseEscrowRequired, 15_000)
-      if (!terms) { console.error(`[buyer] round ${round}: no escrow terms from ${winner.by}`); await sleep(CYCLE_MS); continue }
+      if (!terms) {
+        console.error(`[buyer] round ${round}: no escrow terms from ${winner.by}`)
+        bumpReputation(winner.by, 'failed')
+        await sleep(CYCLE_MS); continue
+      }
       if (!payoutMatches(terms.seller, EXPECTED_SELLER_WALLET)) {
         console.error(`[buyer] round ${round}: escrow payout ${terms.seller} != expected ${EXPECTED_SELLER_WALLET} - skipping`)
+        bumpReputation(winner.by, 'failed')
         await sleep(CYCLE_MS); continue
       }
 
@@ -184,8 +210,10 @@ await startCoralAgent({ agentName: process.env.AGENT_NAME ?? 'buyer-agent' }, as
         const releaseVerb = requestedSettlement === 'arbiter' ? 'ARBITER_RELEASED' : 'RELEASED'
         console.error(`[buyer] round ${round}: ${releaseVerb} to ${winner.by} - ${expl('tx', releaseSig)}`)
         await ctx.send(`${releaseVerb} round=${round} sig=${releaseSig} settlement=${requestedSettlement}`, thread, [winner.by])
+        bumpReputation(winner.by, 'completed')
       } else {
         console.error(`[buyer] round ${round}: no delivery - funds stay in escrow, refundable after the deadline`)
+        bumpReputation(winner.by, 'failed')
       }
     } catch (e) {
       console.error(`[buyer] round error: ${e}`)

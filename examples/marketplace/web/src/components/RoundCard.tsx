@@ -22,7 +22,7 @@ export function RoundCard({ round }: { round: Round }) {
 
       <div className="bids">
         {round.bids.map((b) => (
-          <BidRow key={b.by} bid={b} won={b.by === winner} />
+          <BidRow key={b.by} bid={b} won={b.by === winner} score={round.scores?.[b.by]} />
         ))}
         {round.declined.map((s) => (
           <DeclinedRow key={s} seller={s} />

@@ -19,6 +19,14 @@ export interface RoundBid {
   note?: string
 }
 
+export interface ScoredBid {
+  by: string
+  price: number
+  priceScore: number
+  repPct: number
+  total: number
+}
+
 export type RoundStatus = 'bidding' | 'awarded' | 'deposited' | 'delivered' | 'settled' | 'refunded'
 
 export interface Round {
@@ -27,6 +35,8 @@ export interface Round {
   bids: RoundBid[]
   /** Sellers that were in the market but didn't bid (self-selected out) — needs the seller roster. */
   declined: string[]
+  /** Reputation-weighted score breakdown per bidder, keyed by seller name. Set just before AWARD. */
+  scores?: Record<string, ScoredBid>
   award?: { to: string; reason?: string }
   escrow?: { reference: string; seller: string; amountSol: number; deadlineSecs: number }
   deposit?: { sig: string; buyer: string }
@@ -68,6 +78,17 @@ export function foldRounds(messages: RawMessage[], sellers: string[] = []): Roun
     if (bid) {
       const r = get(bid.round)
       if (!r.bids.some((b) => b.by === bid.by)) r.bids.push({ by: bid.by, priceSol: bid.priceSol, note: bid.note })
+      continue
+    }
+
+    if (verb(text) === 'SCORES') {
+      const r = messageRound(text)
+      if (r != null) {
+        const round = get(r)
+        const jsonStr = text.replace(/^SCORES\s+round=\d+\s*/i, '').trim()
+        const parsed = tryJson(jsonStr)
+        if (parsed && typeof parsed === 'object') round.scores = parsed as Record<string, ScoredBid>
+      }
       continue
     }
 
