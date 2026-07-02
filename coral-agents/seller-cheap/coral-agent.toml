@@ -1,0 +1,34 @@
+edition = 4
+
+[agent]
+name = "seller-cheap"
+version = "0.1.0"
+description = "Marketplace seller persona - undercuts on price. Reuses the seller-agent image; sells the txline service at a low floor."
+summary = "A budget specialist that wins on price."
+readme = "Bids low in the shared market thread, competing on price over quality. Same image as seller-agent; AGENT_NAME + FLOOR_SOL + PERSONA shape it."
+
+[agent.license]
+type = "spdx"
+expression = "MIT"
+
+[options]
+SELLER_WALLET = { type = "string", description = "Devnet wallet pubkey that receives payments" }
+AGENT_NAME = { type = "string", default = "seller-cheap", description = "Market identity (matches the registry name)" }
+SERVICES = { type = "string", default = "txline", description = "Inventory" }
+FLOOR_SOL = { type = "f64", default = 0.0002, description = "Cost floor - low, wins on price" }
+PERSONA = { type = "string", default = "a budget seller who undercuts on price to win the bid", description = "Bidding persona (LLM system prompt)" }
+SERVICE = { type = "string", default = "txline", description = "What deliverService returns" }
+SOLANA_RPC_URL = { type = "string", default = "", description = "Solana RPC URL (devnet)" }
+SETTLEMENT_MODE = { type = "string", default = "arbiter", description = "arbiter (default) | direct legacy base escrow" }
+ESCROW_DEADLINE_SECS = { type = "f64", default = 600, description = "Refund deadline for escrow deposits (seconds)" }
+TXLINE_API_KEY = { type = "string", default = "", description = "Activated TxLINE API token" }
+TXLINE_BASE_URL = { type = "string", default = "", description = "Override the TxLINE host" }
+ANTHROPIC_API_KEY = { type = "string", default = "", description = "Anthropic key" }
+OPENAI_API_KEY = { type = "string", default = "", description = "OpenAI key - set with LLM_PROVIDER=openai" }
+VENICE_API_KEY = { type = "string", default = "", description = "Venice AI key" }
+LLM_PROVIDER = { type = "string", default = "", description = "anthropic (default) | openai | venice" }
+LLM_MODEL = { type = "string", default = "", description = "Override the LLM model id" }
+TRACE = { type = "string", default = "", description = "Set to 1 to log settlement checks" }
+
+[runtimes.docker]
+image = "seller-agent:0.1.0"
