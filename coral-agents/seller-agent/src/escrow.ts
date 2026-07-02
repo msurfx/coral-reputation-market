@@ -8,8 +8,6 @@
  * These reads hit the escrow program deployed to devnet (see PROGRAM_ID); they need live RPC, so they
  * run in a live market session, not in `npm test`/CI.
  */
-// @coral-xyz/anchor is CommonJS - a DEFAULT import exposes the whole module.exports (a namespace
-// import misses members the cjs lexer doesn't detect). esModuleInterop makes this typecheck.
 import anchor from '@coral-xyz/anchor'
 import type { Program } from '@coral-xyz/anchor'
 import { Keypair, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js'
@@ -17,6 +15,22 @@ import { solanaConnection } from '@pay/agent-runtime'
 const { AnchorProvider } = anchor
 
 export const PROGRAM_ID = new PublicKey('R5NWNg9eRLWWQU81Xbzz5Du1k7jTDeeT92Ty6qCeXet')
+
+/** Retry a flaky public-RPC call with backoff — a single transient fetch failure shouldn't crash
+ * the whole agent (devnet's shared public RPC rate-limits/hiccups under load). */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 4): Promise<T> {
+  let lastErr: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (e) {
+      lastErr = e
+      console.error(`[escrow] RPC call failed (attempt ${i + 1}/${attempts}): ${(e as Error).message}`)
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1000 * 2 ** i))
+    }
+  }
+  throw lastErr
+}
 
 /** Per-order escrow PDA: one per (buyer, reference). */
 export function escrowPda(buyer: PublicKey, reference: PublicKey): PublicKey {
@@ -28,13 +42,12 @@ export function escrowPda(buyer: PublicKey, reference: PublicKey): PublicKey {
 
 /** Read-only Program handle (a throwaway wallet - the seller never signs). */
 export async function makeProgram(rpcUrl: string): Promise<Program> {
-  // solanaConnection() applies the devnet guard (throws on a mainnet RPC unless ALLOW_MAINNET=1).
   const provider = new AnchorProvider(
     solanaConnection(rpcUrl),
     new anchor.Wallet(Keypair.generate()),
     { commitment: 'confirmed' },
   )
-  const idl = await anchor.Program.fetchIdl(PROGRAM_ID, provider)
+  const idl = await withRetry(() => anchor.Program.fetchIdl(PROGRAM_ID, provider))
   if (!idl) throw new Error('escrow IDL not found on-chain - is the program deployed to this cluster?')
   return new anchor.Program(idl, provider)
 }
@@ -48,7 +61,7 @@ export async function isFunded(
   minAmountSol = 0,
 ): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const acct = await (program.account as any).escrow.fetchNullable(escrowPda(buyer, reference))
+  const acct = await withRetry(() => (program.account as any).escrow.fetchNullable(escrowPda(buyer, reference)))
   if (!acct) return false
   return (
     acct.buyer.equals(buyer) &&

@@ -8,9 +8,6 @@
  * These calls settle against the escrow program deployed to devnet (see PROGRAM_ID); they need a
  * funded devnet wallet + live RPC, so they run in a live market session, not in `npm test`/CI.
  */
-// @coral-xyz/anchor is CommonJS. Under Node ESM, a NAMESPACE import (`import * as`) only exposes the
-// names cjs-module-lexer detects (BN is missed -> "BN is not a constructor"). A DEFAULT import gives
-// the whole module.exports, so every member resolves. (esModuleInterop makes this typecheck.)
 import anchor from '@coral-xyz/anchor'
 import type { Program } from '@coral-xyz/anchor'
 import { Keypair, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js'
@@ -18,6 +15,22 @@ import { solanaConnection } from '@pay/agent-runtime'
 const { AnchorProvider, BN } = anchor
 
 export const PROGRAM_ID = new PublicKey('R5NWNg9eRLWWQU81Xbzz5Du1k7jTDeeT92Ty6qCeXet')
+
+/** Retry a flaky public-RPC call with backoff — a single transient fetch failure shouldn't crash
+ * the whole agent (devnet's shared public RPC rate-limits/hiccups under load). */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 4): Promise<T> {
+  let lastErr: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (e) {
+      lastErr = e
+      console.error(`[escrow] RPC call failed (attempt ${i + 1}/${attempts}): ${(e as Error).message}`)
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1000 * 2 ** i))
+    }
+  }
+  throw lastErr
+}
 
 export function escrowPda(buyer: PublicKey, reference: PublicKey): PublicKey {
   return PublicKey.findProgramAddressSync(
@@ -28,20 +41,17 @@ export function escrowPda(buyer: PublicKey, reference: PublicKey): PublicKey {
 
 /** Program handle signed by the buyer (deposits/releases/refunds). */
 export async function makeProgram(buyer: Keypair, rpcUrl: string): Promise<Program> {
-  // solanaConnection() applies the devnet guard (throws on a mainnet RPC unless ALLOW_MAINNET=1) -
-  // escrow is the real settlement path, so it must be guarded just like the legacy transfer path.
   const provider = new AnchorProvider(
     solanaConnection(rpcUrl),
     new anchor.Wallet(buyer),
     { commitment: 'confirmed' },
   )
-  const idl = await anchor.Program.fetchIdl(PROGRAM_ID, provider)
+  const idl = await withRetry(() => anchor.Program.fetchIdl(PROGRAM_ID, provider))
   if (!idl) throw new Error('escrow IDL not found on-chain - is the program deployed to this cluster?')
   return new anchor.Program(idl, provider)
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/** Lock `amountSol` for `reference`, refundable `deadlineSecs` from now. Returns the deposit sig. */
 export async function deposit(
   program: Program,
   buyer: Keypair,
@@ -51,32 +61,30 @@ export async function deposit(
   deadlineSecs: number,
 ): Promise<string> {
   const deadline = new BN(Math.floor(Date.now() / 1000) + deadlineSecs)
-  return (program.methods as any)
+  return withRetry(() => (program.methods as any)
     .initialize(new BN(Math.round(amountSol * LAMPORTS_PER_SOL)), reference, deadline)
     .accounts({ buyer: buyer.publicKey, seller, escrow: escrowPda(buyer.publicKey, reference) })
     .signers([buyer])
-    .rpc()
+    .rpc())
 }
 
-/** Confirm delivery -> pay the seller and close the escrow. */
 export async function release(
   program: Program,
   buyer: Keypair,
   seller: PublicKey,
   reference: PublicKey,
 ): Promise<string> {
-  return (program.methods as any)
+  return withRetry(() => (program.methods as any)
     .release()
     .accounts({ buyer: buyer.publicKey, seller, escrow: escrowPda(buyer.publicKey, reference) })
     .signers([buyer])
-    .rpc()
+    .rpc())
 }
 
-/** Reclaim the deposit after the deadline (seller never delivered). */
 export async function refund(program: Program, buyer: Keypair, reference: PublicKey): Promise<string> {
-  return (program.methods as any)
+  return withRetry(() => (program.methods as any)
     .refund()
     .accounts({ buyer: buyer.publicKey, escrow: escrowPda(buyer.publicKey, reference) })
     .signers([buyer])
-    .rpc()
+    .rpc())
 }
