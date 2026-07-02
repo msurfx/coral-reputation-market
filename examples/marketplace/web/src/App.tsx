@@ -3,20 +3,20 @@ import { useFeed, startMarket } from './api'
 import { MarketView } from './components/MarketView'
 import { Explainer } from './components/Explainer'
 
-/** Read ?session=<id> from the URL so the launcher can deep-link straight to a live market. */
 const initialSession = new URLSearchParams(window.location.search).get('session') ?? ''
 
 export default function App() {
   const [session, setSession] = useState(initialSession)
   const [starting, setStarting] = useState(false)
   const [startErr, setStartErr] = useState<string>()
+  const [stageFailure, setStageFailure] = useState(false)
   const { rounds, connected, error } = useFeed(session)
 
   async function onStart() {
     setStarting(true)
     setStartErr(undefined)
     try {
-      const id = await startMarket()
+      const id = await startMarket(stageFailure ? '2,3' : undefined)
       setSession(id)
       const url = new URL(window.location.href)
       url.searchParams.set('session', id)
@@ -47,6 +47,18 @@ export default function App() {
           {starting ? 'starting…' : 'Start a market'}
         </button>
       </div>
+
+      <label className="stage-toggle">
+        <input
+          type="checkbox"
+          checked={stageFailure}
+          onChange={(e) => setStageFailure(e.target.checked)}
+          data-testid="stage-failure"
+        />
+        stage a reputation drop
+        <span className="stage-hint"> — seller-cheap no-shows rounds 2 &amp; 3, watch a pricier seller overtake it</span>
+      </label>
+
       {startErr && <p className="start-err" data-testid="start-err">{startErr}</p>}
 
       <Explainer />

@@ -99,3 +99,6 @@ body { margin: 0; background: var(--bg); color: var(--txt); }
 .standings-rep { color: var(--won); }
 .standings-price { color: var(--premium); }
 .standings-wins { margin-left: auto; color: var(--dim); font-size: 12px; }
+
+.stage-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); margin: 10px 0 0; cursor: pointer; }
+.stage-hint { color: var(--dim); }

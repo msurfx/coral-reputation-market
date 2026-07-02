@@ -1,19 +1,3 @@
-/**
- * Marketplace feed server — the only backend the visualizer needs.
- *
- * Reads a CoralOS session's transcript (extended state, behind the dev token), folds it into typed
- * market rounds with `foldRounds`, and serves CORS-enabled JSON for the React app to poll. The browser
- * never touches coral or Solana — this keeps the token server-side and avoids CORS.
- *
- *   GET /api/health                  → { ok: true }
- *   GET /api/feed?session=<sid>      → { session, rounds, updatedAt }   (session defaults to $SESSION)
- *
- * Set FEED_FIXTURE=<path-to-recorded-extended-state.json> to serve a recorded transcript instead of
- * hitting coral — used by the e2e so it exercises the REAL fold/parse path with no devnet.
- *
- * Env: CORAL_SERVER_URL (default http://localhost:5555), CORAL_TOKEN (default dev),
- *      SESSION, MARKET_SELLERS (csv for the declined column), FEED_FIXTURE, PORT (default 4000).
- */
 import express from 'express'
 import { readFileSync } from 'node:fs'
 import { spawn } from 'node:child_process'
@@ -22,7 +6,7 @@ import { dirname, join } from 'node:path'
 import { foldRounds } from './foldRounds.js'
 import { collectMessages } from './coralState.js'
 
-const MARKET_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..') // examples/marketplace
+const MARKET_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
 const BASE = process.env.CORAL_SERVER_URL ?? 'http://localhost:5555'
 const TOKEN = process.env.CORAL_TOKEN ?? 'dev'
@@ -33,7 +17,6 @@ const FIXTURE = process.env.FEED_FIXTURE
 const SELLERS = (process.env.MARKET_SELLERS ?? 'seller-cheap,seller-premium,seller-lazy')
   .split(',').map((s) => s.trim()).filter(Boolean)
 
-/** Fetch a session's raw extended state — from the FEED_FIXTURE file, else from coral. */
 async function readState(session: string): Promise<unknown> {
   if (FIXTURE) return JSON.parse(readFileSync(FIXTURE, 'utf8'))
   const r = await fetch(`${BASE}/api/v1/local/session/${NS}/${session}/extended`, {
@@ -53,16 +36,17 @@ app.use(express.json())
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
-/** Operator trigger: launch a market session (runs the marketplace launcher) and return its id. */
-app.post('/api/start', (_req, res) => {
-  const child = spawn('npm', ['start'], { cwd: MARKET_DIR, shell: true })
+app.post('/api/start', (req, res) => {
+  const failRounds = typeof req.body?.failRounds === 'string' ? req.body.failRounds : ''
+  const env = failRounds ? { ...process.env, CHEAP_FAIL_ROUNDS: failRounds } : process.env
+  const child = spawn('npm', ['start'], { cwd: MARKET_DIR, shell: true, env })
   let buf = ''
   let done = false
   const reply = (code: number, body: unknown) => { if (!done) { done = true; res.status(code).json(body) } }
   const onData = (d: Buffer) => {
     buf += d.toString()
     const m = buf.match(/Market session ([a-f0-9-]+)/)
-    if (m) reply(200, { session: m[1] })
+    if (m) reply(200, { session: m[1], failRounds: failRounds || undefined })
   }
   child.stdout.on('data', onData)
   child.stderr.on('data', onData)
