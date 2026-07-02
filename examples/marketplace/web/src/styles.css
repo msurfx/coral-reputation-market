@@ -122,3 +122,32 @@ body { margin: 0; background: var(--bg); color: var(--txt); }
 .pending-fill-slow { background: var(--refund); }
 .pending-elapsed { color: var(--dim); font-size: 11px; }
 .pending-error .pending-text { color: var(--refund); }
+
+@media (max-width: 640px) {
+  .app { padding: 16px 12px 48px; }
+  .app-head { gap: 10px; }
+  .app-head h1 { font-size: 18px; }
+  .sub { font-size: 11px; }
+  .session-bar { flex-direction: column; }
+  .session-bar button { width: 100%; }
+  .stage-toggle { font-size: 12px; align-items: flex-start; }
+  .stage-hint { display: block; margin-top: 2px; }
+
+  .bid { flex-wrap: wrap; gap: 6px 10px; }
+  .bid-seller { min-width: 0; flex: 1 1 90px; }
+  .bid-tag { margin-left: 0; }
+
+  .standings-row { flex-wrap: wrap; gap: 6px 10px; }
+  .standings-name { min-width: 0; flex: 1 1 90px; }
+  .standings-wins { margin-left: 0; flex-basis: 100%; }
+
+  .round-head { flex-wrap: wrap; }
+  .pill { margin-left: 0; }
+  .round-want { flex-basis: 100%; }
+
+  .wc-row { grid-template-columns: 1fr; row-gap: 2px; }
+  .wc-pct { text-align: left; }
+
+  .settle-row { flex-wrap: wrap; }
+  .settle-group { flex-wrap: wrap; }
+}
