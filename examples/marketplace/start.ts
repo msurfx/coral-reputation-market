@@ -78,7 +78,7 @@ async function main() {
   // (set per coral-agent.toml), not code. The buyer awards best value and settles the winner via escrow.
   const seller = (name: string) =>
     agent(name, {
-      SELLER_WALLET: str(wallet), SOLANA_RPC_URL: str(rpc), AGENT_NAME: str(name),
+      SELLER_WALLET: str(wallet), SOLANA_RPC_URL: str(rpc), AGENT_NAME: str(name), SETTLEMENT_MODE: str(env.SETTLEMENT_MODE ?? 'direct'),
       SERVICES: str('txline'), TXLINE_API_KEY: str(txlineKey),
       ...(env.TXLINE_BASE_URL ? { TXLINE_BASE_URL: str(env.TXLINE_BASE_URL) } : {}),
       ...llmOpts,
@@ -124,7 +124,7 @@ async function main() {
     BUYER_SERVICE: str(buyerService),
     BUYER_ARG: str(buyerArg),
     ...(buyerArgs ? { BUYER_ARGS: str(buyerArgs) } : {}),
-    MARKET_SELLERS: str(buyerSellers.join(',')),
+    MARKET_SELLERS: str(buyerSellers.join(',')), SETTLEMENT_MODE: str(env.SETTLEMENT_MODE ?? 'direct'),
     ...llmOpts,
   }
 
