@@ -21,7 +21,7 @@ export function BidRow({ bid, won, score }: { bid: RoundBid; won: boolean; score
 export function DeclinedRow({ seller }: { seller: string }) {
   return (
     <div className="bid bid-declined" data-testid="declined" data-seller={seller}>
-      <Avatar seller={seller} size={20} />
+      <Avatar seller={seller} size0} />
       <span className="bid-seller">{seller}</span>
       <span className="bid-note">declined — not in inventory</span>
     </div>
