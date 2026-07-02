@@ -3,6 +3,7 @@ import { useFeed, startMarket } from './api'
 import { MarketView } from './components/MarketView'
 import { Explainer } from './components/Explainer'
 import { Logo } from './components/Logo'
+import { TimedProgress } from './components/TimedProgress'
 
 const initialSession = new URLSearchParams(window.location.search).get('session') ?? ''
 
@@ -63,13 +64,14 @@ export default function App() {
         <span className="stage-hint"> — seller-cheap no-shows rounds 2 &amp; 3, watch a pricier seller overtake it</span>
       </label>
 
-      {startErr && <p className="start-err" data-testid="start-err">{startErr}</p>}
+      {starting && <TimedProgress label="Creating the market session…" maxMs={30_000} />}
+      {startErr && <p className="start-err" data-testid="start-err">Couldn't start the market — {startErr}</p>}
 
       <Explainer />
 
       <main>
-        {session ? <MarketView rounds={rounds} /> : (
-          <p className="empty">Fund your wallets, then <strong>Start a market</strong> — agents will bid and settle live.</p>
+        {session && !starting ? <MarketView rounds={rounds} connected={connected} feedError={error} /> : (
+          !starting && <p className="empty">Fund your wallets, then <strong>Start a market</strong> — agents will bid and settle live.</p>
         )}
       </main>
     </div>

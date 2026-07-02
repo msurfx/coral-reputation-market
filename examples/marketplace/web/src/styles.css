@@ -117,3 +117,8 @@ body { margin: 0; background: var(--bg); color: var(--txt); }
 .pending-fill { width: 40%; height: 100%; background: var(--coral); border-radius: 999px; animation: slide 1.4s ease-in-out infinite; }
 .pending-text { color: var(--dim); font-size: 13px; }
 @keyframes slide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+
+.pending-fill-timed { height: 100%; background: var(--coral); border-radius: 999px; transition: width 0.2s linear; }
+.pending-fill-slow { background: var(--refund); }
+.pending-elapsed { color: var(--dim); font-size: 11px; }
+.pending-error .pending-text { color: var(--refund); }
