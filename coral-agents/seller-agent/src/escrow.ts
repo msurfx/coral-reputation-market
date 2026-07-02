@@ -61,7 +61,7 @@ export async function isFunded(
   minAmountSol = 0,
 ): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const acct = await withRetry(() => (program.account as any).escrow.fetchNullable(escrowPda(buyer, reference)))
+  const acct = await withRetry<any>(() => (program.account as any).escrow.fetchNullable(escrowPda(buyer, reference)))
   if (!acct) return false
   return (
     acct.buyer.equals(buyer) &&
