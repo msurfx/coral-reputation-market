@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+export PATH="/home/codespace/nvm/current/bin:$PATH"
 cd /workspaces/coral-reputation-market
 
 echo "[startup] launching coral..."
