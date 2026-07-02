@@ -77,10 +77,13 @@ async function main() {
   // Every seller is a txline seller sharing the receive wallet + token; they compete on persona/floor
   // (set per coral-agent.toml), not code. The buyer awards best value and settles the winner via escrow.
   const seller = (name: string) =>
+    agent(name, { /* placeholder - replaced below */ })
+const _unused_seller_placeholder = (name: string) =>
     agent(name, {
       SELLER_WALLET: str(wallet), SOLANA_RPC_URL: str(rpc), AGENT_NAME: str(name), SETTLEMENT_MODE: str(env.SETTLEMENT_MODE ?? 'direct'),
       SERVICES: str('txline'), TXLINE_API_KEY: str(txlineKey),
       ...(env.TXLINE_BASE_URL ? { TXLINE_BASE_URL: str(env.TXLINE_BASE_URL) } : {}),
+      ...(name === 'seller-cheap' && env.CHEAP_FAIL_ROUNDS ? { FAIL_ROUNDS: str(env.CHEAP_FAIL_ROUNDS) } : {}),
       ...llmOpts,
     })
 

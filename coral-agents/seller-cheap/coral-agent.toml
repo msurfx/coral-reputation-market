@@ -29,6 +29,7 @@ VENICE_API_KEY = { type = "string", default = "", description = "Venice AI key" 
 LLM_PROVIDER = { type = "string", default = "", description = "anthropic (default) | openai | venice" }
 LLM_MODEL = { type = "string", default = "", description = "Override the LLM model id" }
 TRACE = { type = "string", default = "", description = "Set to 1 to log settlement checks" }
+FAIL_ROUNDS = { type = "string", default = "", description = "Comma-separated round numbers to simulate a no-show delivery on (demo/staging only)" }
 
 [runtimes.docker]
 image = "seller-agent:0.1.0"
