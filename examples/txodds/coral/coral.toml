@@ -20,4 +20,4 @@ localAgentRescanTimer = "5s"
 
 [docker]
 # From inside a container on Docker Desktop, the host is host.docker.internal.
-address = "host.docker.internal"
+address = "172.17.0.1"
