@@ -1,0 +1,14 @@
+{
+  "name": "coral-reputation-market",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "postStartCommand": "bash .devcontainer/start-services.sh",
+  "forwardPorts": [5173, 4000, 5555],
+  "portsAttributes": {
+    "5173": { "label": "Marketplace UI", "visibility": "public", "onAutoForward": "openBrowser" },
+    "4000": { "label": "Feed API", "visibility": "private" },
+    "5555": { "label": "Coral MCP", "visibility": "private" }
+  }
+}
