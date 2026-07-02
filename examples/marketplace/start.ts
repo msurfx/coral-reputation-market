@@ -115,6 +115,7 @@ async function main() {
 
   const buyerOpts: Record<string, unknown> = {
     BUYER_KEYPAIR_B58: str(keypair),
+    ARBITER_KEYPAIR_B58: str(env.ARBITER_KEYPAIR_B58 ?? ''),
     AGENT_NAME: str('buyer-agent'),
     SOLANA_RPC_URL: str(rpc),
     // F3: the expected seller payout wallet — the buyer binds the escrow seller= to it (broker if enabled).
